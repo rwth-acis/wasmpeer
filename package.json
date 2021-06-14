@@ -1,0 +1,33 @@
+{
+  "name": "wasmpeer",
+  "version": "0.0.1",
+  "description": "A P2P Service Framework with WebAssembly",
+  "main": "index.js",
+  "scripts": {
+    "start": "node -r esm index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rwth-acis/wasmpeer.git"
+  },
+  "keywords": [
+    "wasm",
+    "p2p",
+    "js",
+    "webassembly"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rwth-acis/wasmpeer/issues"
+  },
+  "homepage": "https://github.com/rwth-acis/wasmpeer#readme",
+  "dependencies": {
+    "@wasmer/wasi": "^0.12.0",
+    "@wasmer/wasm-transformer": "^0.12.0",
+    "@wasmer/wasmfs": "^0.12.0",
+    "esm": "^3.2.25",
+    "node-fetch": "^2.6.1"
+  }
+}
