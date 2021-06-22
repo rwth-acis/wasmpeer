@@ -1,9 +1,9 @@
 'use strict';   
-const executor = require('./src/core/executor');
+const { default: Executor } = require('./src/core/executor');
 
 const main = async () => {
     const target = './etc/fibo.wasm';
-    const res = await executor.runLocalFile(target, 'main', { i: 1 });
+    const res = await Executor.runLocalFile(target, 'main', { i: 5 });
     console.log(res);
 }
 
