@@ -28,7 +28,7 @@
     "@wasmer/wasm-transformer": "^0.12.0",
     "@wasmer/wasmfs": "^0.12.0",
     "esm": "^3.2.25",
-    "mocha": "^9.0.1",
+    "mocha": "8.3.0",
     "node-fetch": "^2.6.1"
   }
 }
