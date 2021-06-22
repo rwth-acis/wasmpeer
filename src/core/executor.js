@@ -4,6 +4,7 @@ import { WasmFs } from '@wasmer/wasmfs';
 import wasiBindings from '@wasmer/wasi/lib/bindings/node';
 import fs from 'fs';
 import fetch from 'node-fetch';
+import KeyValueStore from './store/keyvalue';
 
 //#region core
 const wasmFs = new WasmFs();
@@ -17,9 +18,19 @@ const wasi = new WASI({
 });
 
 const run = async (bytesInput, funcName, input) => {
+    const store = new KeyValueStore();
+    const importObject = {
+        main: {
+            kvstore_get: store.get,
+            kvstore_set: store.set
+        },
+        env: { }
+    }
+    const mod = await WebAssembly.instantiate(new Uint8Array(bytesInput), importObject);
+
+    const func = mod.instance.exports[funcName];
     const args = argsMapper(input, null);
-    const mod = await WebAssembly.instantiate(new Uint8Array(bytesInput));
-    return mod.instance.exports[funcName](args);
+    return func.apply(this, args);
 }
 
 const runWasi = async (bytesInput) => {
