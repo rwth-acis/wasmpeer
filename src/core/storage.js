@@ -1,7 +1,7 @@
 'use strict';
 import fs from 'fs';
 import os from 'os';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuid_v4 } from 'uuid';
 
 export default class Storage {
     constructor(instanceId) {
@@ -16,6 +16,7 @@ export default class Storage {
         };
 
         this.targetDir = dir;
+        this.catalogPath = dir + 'catalog';
     }
 
     read(id) {
@@ -34,18 +35,33 @@ export default class Storage {
         this.put(path, object);
     }
 
+    getCatalog() {
+        if (!fs.existsSync(this.catalogPath)) {
+            return {};
+        } else {
+            return JSON.parse(fs.readFileSync(this.catalogPath));
+        }
+    }
+
+    setCatalog(object) {
+        fs.writeFileSync(this.catalogPath, JSON.stringify(object));
+    }
+
     lookAtCatalog(id) {
-        return this.db[id];
+        return this.getCatalog()[id];
     }
 
     newEntryCatalog(name) {
-        const id = uuidv4();
+        const id = uuid_v4();
         const entry = {
             path: this.targetDir + id,
             id: id,
             name: name
         };
-        this.db[entry.id] = entry
+
+        const db = this.getCatalog();
+        db[entry.id] = entry;
+        this.setCatalog(db);
         return entry;
     }
 

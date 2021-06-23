@@ -2,23 +2,32 @@
 import fs from 'fs';
 import fetch from 'node-fetch';
 import Runner from './runner';
+import Storage from './storage';
 
 export default class Executor {
-    constructor() { }
+    constructor(instanceId) {
+        this.instanceId = instanceId;
+    }
     
+    async run(id, funcName, input) {
+        const a = new Storage(this.instanceId);
+        const source = a.read(id);
+        return Executor.start(source, funcName, input);
+    }
+
     static async runLocalFile(target, funcName, input) {
         const source = fs.readFileSync(target);
-        return this.run(source, funcName, input);
+        return Executor.start(source, funcName, input);
     }
     
     static async runRemoteFile(target, funcName, input) {
         console.log('getting from url: ' + target);
         const response = await fetch(target);
         const source = await response.arrayBuffer();
-        return this.run(source, funcName, input);
+        return Executor.start(source, funcName, input);
     }
 
-    static run(source, funcName, input) {
+    static start(source, funcName, input) {
         const runner = new Runner(source, funcName, input);
         return runner.run();
     }
