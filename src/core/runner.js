@@ -19,14 +19,15 @@ export default class Runner {
         this.source = source;
         this.funcName = funcName;
         this.args = this.argsMapper(input);
-        this.store = new KeyValueStore();
+        
     }
 
     async run() {
+        const store = new KeyValueStore();
         const importObject = {
             main: {
-                kvstore_get: this.store.get,
-                kvstore_set: this.store.set,
+                kvstore_get: (key) => store.get(key),
+                kvstore_set: (key, value) => store.set(key, value),
                 // TODO: need support for returning string 
                 // log_info: (msg) => { console.log(msg) }
             },
