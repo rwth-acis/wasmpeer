@@ -1,10 +1,8 @@
-'use strict';   
-const { default: Executor } = require('./src/core/executor');
+'use strict';
+const { default: Communicator } = require('./src/core/communicator');
+// REMARK: InstanceId will be stored in the local storage, including port
+const instanceId = 'f5e9de80-e9f2-4fcd-8ea0-2e089565ae9p';
+const port = 3000;
 
-const main = async () => {
-    const target = './etc/main.wasm';
-    const res = await Executor.runLocalFile(target, 'add', { i: 10, j: 11 });
-    console.log(res);
-}
-
-main();
+const communicator = new Communicator(instanceId, port);
+communicator.start();

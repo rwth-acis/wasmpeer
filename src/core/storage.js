@@ -7,9 +7,6 @@ export default class Storage {
     constructor(instanceId) {
         this.instanceId = instanceId;
 
-        //TODO: persisted catalog will be implemented
-        this.db = {};
-
         const dir = os.tmpdir() + '/wasmpeer/storage/' + instanceId + '/';
         if (!fs.existsSync(dir)){
             fs.mkdirSync(dir, {recursive: true});

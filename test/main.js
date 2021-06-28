@@ -4,6 +4,7 @@ const { default: Executor } = require('../src/core/executor');
 const { default: Storage } = require('../src/core/storage');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const instanceId = 'f5e9de80-e9f2-4fcd-8ea0-2e089565ae9p';
 
 describe('CORE', () => {
     describe('Executor', () => {
@@ -48,7 +49,6 @@ describe('CORE', () => {
 });
 
 describe('SERVER', () => {
-    const instanceId = 'f5e9de80-e9f2-4fcd-8ea0-2e089565ae9p';
     let id = '';
     describe('Execute a fibo function from storage', async () => {
         it('Storage will store the source of the wasm file and will return the id of the file in the storage', async () => {
@@ -64,6 +64,7 @@ describe('SERVER', () => {
             const executor = new Executor(instanceId);
             const res = await executor.run(id, 'main', { i: 5 });
             assert.strictEqual(res, 120);
+            console.log(id);
         });
     });
 });
