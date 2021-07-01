@@ -15,15 +15,15 @@ const wasi = new WASI({
 });
 
 export default class Runner {
-    constructor(source, funcName, input) {
+    constructor(source, store, funcName, input) {
         this.source = source;
         this.funcName = funcName;
         this.args = this.argsMapper(input);
-        
+        this.store = store;
     }
 
     async run() {
-        const store = new KeyValueStore();
+        const store = new KeyValueStore(this.store);
         const importObject = {
             main: {
                 kvstore_get: (key) => store.get(key),

@@ -1,10 +1,7 @@
 'use strict';
 export default class KeyValueStore {
     constructor(target) {
-        this.target = target;
-
-        // TODO: persisting data will be implemented later
-        this.db = {};
+        this.db = target
     }
 
     get(key) {

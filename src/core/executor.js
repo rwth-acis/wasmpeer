@@ -10,25 +10,25 @@ export default class Executor {
     }
     
     async run(id, funcName, input) {
-        const a = new Storage(this.instanceId);
-        const source = a.read(id);
-        return Executor.start(source, funcName, input);
+        const storage = new Storage(this.instanceId);
+        const { source, store } = storage.getService(id);
+        return Executor.start(source, store, funcName, input);
     }
 
     static async runLocalFile(target, funcName, input) {
         const source = fs.readFileSync(target);
-        return Executor.start(source, funcName, input);
+        return Executor.start(source, null, funcName, input);
     }
     
     static async runRemoteFile(target, funcName, input) {
         console.log('getting from url: ' + target);
         const response = await fetch(target);
         const source = await response.arrayBuffer();
-        return Executor.start(source, funcName, input);
+        return Executor.start(source, null, funcName, input);
     }
 
-    static start(source, funcName, input) {
-        const runner = new Runner(source, funcName, input);
+    static start(source, store, funcName, input) {
+        const runner = new Runner(source, store, funcName, input);
         return runner.run();
     }
 }

@@ -9,7 +9,7 @@ const instanceId = 'f5e9de80-e9f2-4fcd-8ea0-2e089565ae9p';
 describe('CORE', () => {
     describe('Executor', () => {
         describe('#runLocalFile', () => {
-            it('Fibo function should return 120 when the value is 5', async () => { 
+            it('Fibo function should return 120 when the value is 5', async () => {
                 const res = await Executor.runLocalFile('./etc/fibo.wasm', 'main', { i: 5 });
                 assert.strictEqual(res, 120);
             });
@@ -25,14 +25,14 @@ describe('CORE', () => {
         describe('#create', () => {
             it('Function will create a new entry to the catalog and save the file', async () => {
                 const filename = path1.replace(/^.*[\\\/]/, '')
-                id = storage.create(filename, objFibo);
+                id = storage.storeService(filename, objFibo);
                 assert.ok(id);
             });
         });
         describe('#read', () => {
             it('Function will read the new entry from the catalog and the file should be the same', async () => {
-                const obj = storage.read(id);
-                assert.deepStrictEqual(obj, objFibo);
+                const { source } = storage.getService(id);
+                assert.deepStrictEqual(source, objFibo);
             });
         });
         describe('#update', () => {
@@ -57,14 +57,13 @@ describe('SERVER', () => {
             const objFibo = fs.readFileSync(path1);
 
             const filename = path1.replace(/^.*[\\\/]/, '')
-            id = storage.create(filename, objFibo);
+            id = storage.storeService(filename, objFibo);
             assert.ok(id);
         });
         it('Executor will execute the fibo function with input 5, and gives return value of 120', async () => {
             const executor = new Executor(instanceId);
             const res = await executor.run(id, 'main', { i: 5 });
             assert.strictEqual(res, 120);
-            console.log(id);
         });
     });
 });
