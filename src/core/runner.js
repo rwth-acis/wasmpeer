@@ -3,6 +3,7 @@ import { WASI } from '@wasmer/wasi';
 import { WasmFs } from '@wasmer/wasmfs';
 import wasiBindings from '@wasmer/wasi/lib/bindings/node';
 import KeyValueStore from './store/keyvalue';
+import Storage from './storage';
 
 const wasmFs = new WasmFs();
 const wasi = new WASI({
@@ -15,28 +16,42 @@ const wasi = new WASI({
 });
 
 export default class Runner {
-    constructor(source, store, funcName, input) {
-        this.source = source;
-        this.funcName = funcName;
-        this.args = this.argsMapper(input);
-        this.store = store;
+    constructor(instanceId) {
+        this.instanceId = instanceId;
+        this.storage = new Storage(instanceId);
+        this.keyValueStore = {
+            get: () => { },
+            set: () => { }
+        };
     }
 
-    async run() {
-        const store = new KeyValueStore(this.store);
+    async run(id, funcName, input) {
+        const { source, store, storeId } = this.storage.getService(id);
+
+        this.keyValueStore = new KeyValueStore(store);
+        const res = this.runBasic(source, funcName, input);
+
+        this.storage.update(storeId, this.keyValueStore.export());
+        return res;
+    }
+
+    async runBasic(source, funcName, input) {
         const importObject = {
             main: {
-                kvstore_get: (key) => store.get(key),
-                kvstore_set: (key, value) => store.set(key, value),
+                kvstore_get: (key) => this.keyValueStore.get(key),
+                kvstore_set: (key, value) => this.keyValueStore.set(key, value),
                 // TODO: need support for returning string 
                 // log_info: (msg) => { console.log(msg) }
             },
-            env: { }
+            env: {}
         }
-        const mod = await WebAssembly.instantiate(new Uint8Array(this.source), importObject);
-    
-        const func = mod.instance.exports[this.funcName];
-        return func.apply(this, this.args);
+        const mod = await WebAssembly.instantiate(new Uint8Array(source), importObject);
+
+        const args = this.argsMapper(input);
+        const func = mod.instance.exports[funcName];
+        const res = func.apply(this, args);
+
+        return res;
     }
 
     // TODO: #3 simple mapper for now, more advance mapping technique like descriptor file is planned

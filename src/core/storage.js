@@ -31,6 +31,8 @@ export default class Storage {
         const store = this.catalog.getJSON(entry[storeFileIdentifier]);
 
         return {
+            sourceId: entry[sourceFileIdentifier],
+            storeId: entry[storeFileIdentifier],
             source: source,
             store: store
         };

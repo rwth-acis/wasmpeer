@@ -8,6 +8,10 @@ export default class KeyValueStore {
         return this.db[key];
     }
 
+    export() {
+        return this.db;
+    }
+
     set(key, value) {
         this.db[key] = value;
     }
