@@ -3,7 +3,6 @@ import { WASI } from '@wasmer/wasi';
 import { WasmFs } from '@wasmer/wasmfs';
 import wasiBindings from '@wasmer/wasi/lib/bindings/node';
 import KeyValueStore from './store/keyvalue';
-import Storage from './storage';
 
 const wasmFs = new WasmFs();
 const wasi = new WASI({
@@ -16,9 +15,8 @@ const wasi = new WASI({
 });
 
 export default class Runner {
-    constructor(instanceId) {
-        this.instanceId = instanceId;
-        this.storage = new Storage(instanceId);
+    constructor(storage) {
+        this.storage = storage;
         this.keyValueStore = {
             get: () => { },
             set: () => { }

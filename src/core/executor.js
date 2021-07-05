@@ -2,15 +2,14 @@
 import fs from 'fs';
 import fetch from 'node-fetch';
 import Runner from './runner';
-import Storage from './storage';
 
 export default class Executor {
-    constructor(instanceId) {
-        this.instanceId = instanceId;
+    constructor(storage) {
+        this.storage = storage;
     }
 
     async run(id, funcName, input) {
-        const runner = new Runner(this.instanceId);
+        const runner = new Runner(this.storage);
         return runner.run(id, funcName, input);
     }
 
@@ -27,7 +26,7 @@ export default class Executor {
     }
 
     static start(source, funcName, input) {
-        const runner = new Runner('');
+        const runner = new Runner(null);
         return runner.runBasic(source, funcName, input);
     }
 }
