@@ -10,7 +10,7 @@ describe('CORE', () => {
     describe('Executor', () => {
         describe('#runLocalFile', () => {
             it('Fibo function should return 120 when the value is 5', async () => {
-                const res = await Executor.runLocalFile('./etc/fibo.wasm', 'main', { i: 5 });
+                const res = await Executor.runLocalFile('./static/wasm/fibo.wasm', 'main', { i: 5 });
                 assert.strictEqual(res, 120);
             });
         });
@@ -18,8 +18,8 @@ describe('CORE', () => {
 
     describe('Storage', () => {
         const storage = new Storage(uuidv4());
-        const path1 = './etc/fibo.wasm';
-        const path2 = './etc/helloworld.wasm';
+        const path1 = './static/wasm/fibo.wasm';
+        const path2 = './static/wasm/helloworld.wasm';
         const objFibo = fs.readFileSync(path1);
         let id = '';
         describe('#create', () => {
@@ -53,7 +53,7 @@ describe('SERVER', () => {
     describe('Execute a fibo function from storage', async () => {
         it('Storage will store the source of the wasm file and will return the id of the file in the storage', async () => {
             const storage = new Storage(instanceId);
-            const path1 = './etc/fibo.wasm';
+            const path1 = './static/wasm/fibo.wasm';
             const objFibo = fs.readFileSync(path1);
 
             const filename = path1.replace(/^.*[\\\/]/, '')
