@@ -1,7 +1,7 @@
 'use strict';
 const assert = require('assert');
 const { default: Executor } = require('../src/core/executor');
-const { default: Storage } = require('../src/core/storage');
+const { default: Storage } = require('../src/node/storage');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const instanceId = 'f5e9de80-e9f2-4fcd-8ea0-2e089565ae9p';
@@ -38,11 +38,11 @@ describe('CORE', () => {
         describe('#update', () => {
             it('Function will update the entry from the catalog and the file should be the updated', async () => {
                 const objHello = fs.readFileSync(path2);
-                storage.update(id, objHello);
+                storage.updateService(id, objHello);
 
-                const obj = storage.read(id);
-                assert.deepStrictEqual(obj, objHello);
-                assert.notDeepStrictEqual(obj, objFibo);
+                const { source } = storage.getService(id);
+                assert.deepStrictEqual(source, objHello);
+                assert.notDeepStrictEqual(source, objFibo);
             });
         });
     });
@@ -50,9 +50,10 @@ describe('CORE', () => {
 
 describe('SERVER', () => {
     let id = '';
+    const storage = new Storage(instanceId);
     describe('Execute a fibo function from storage', async () => {
         it('Storage will store the source of the wasm file and will return the id of the file in the storage', async () => {
-            const storage = new Storage(instanceId);
+            
             const path1 = './static/wasm/fibo.wasm';
             const objFibo = fs.readFileSync(path1);
 
@@ -61,7 +62,7 @@ describe('SERVER', () => {
             assert.ok(id);
         });
         it('Executor will execute the fibo function with input 5, and gives return value of 120', async () => {
-            const executor = new Executor(instanceId);
+            const executor = new Executor(storage);
             const res = await executor.run(id, 'main', { i: 5 });
             assert.strictEqual(res, 120);
         });
