@@ -2,10 +2,9 @@
   "name": "wasmpeer",
   "version": "0.0.1",
   "description": "A P2P Service Framework with WebAssembly",
-  "main": "index.js",
   "scripts": {
-    "start": "node -r esm index.js",
-    "test": "mocha -r esm"
+    "start:node": "node -r esm src/node/index.js",
+    "test:node": "mocha -r esm test/main.js"
   },
   "repository": {
     "type": "git",
