@@ -6,8 +6,10 @@
     "node": "12"
   },
   "scripts": {
-    "start:node": "node -r esm src/node/index.js",
-    "test:node": "mocha -r esm test/main.js"
+    "node:start": "node -r esm src/node/index.js",
+    "test": "mocha -r esm test/main.js",
+    "build": "parcel build src/browser/index.html",
+    "serve": "node server.js"
   },
   "repository": {
     "type": "git",
