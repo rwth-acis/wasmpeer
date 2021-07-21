@@ -23,7 +23,7 @@ export default class Storage {
         return entry.id;
     }
 
-    getService(id) {
+    async getService(id) {
         const entry = this.catalog.getJSON(id);
         const source = this.catalog.get(entry[sourceFileIdentifier]);
         const store = this.catalog.getJSON(entry[storeFileIdentifier]);

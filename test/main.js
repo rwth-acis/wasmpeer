@@ -10,7 +10,8 @@ describe('CORE', () => {
     describe('Executor', () => {
         describe('#runLocalFile', () => {
             it('Fibo function should return 120 when the value is 5', async () => {
-                const res = await Executor.runLocalFile('./static/wasm/fibo.wasm', 'main', { i: 5 });
+                const objFibo = fs.readFileSync('./static/wasm/fibo.wasm');
+                const res = await Executor.runLocalFile(objFibo, 'main', { i: 5 });
                 assert.strictEqual(res, 120);
             });
         });
@@ -31,7 +32,7 @@ describe('CORE', () => {
         });
         describe('#read', () => {
             it('Function will read the new entry from the catalog and the file should be the same', async () => {
-                const { source } = storage.getService(id);
+                const { source } = await storage.getService(id);
                 assert.deepStrictEqual(source, objFibo);
             });
         });
@@ -40,7 +41,7 @@ describe('CORE', () => {
                 const objHello = fs.readFileSync(path2);
                 storage.updateService(id, objHello);
 
-                const { source } = storage.getService(id);
+                const { source } = await storage.getService(id);
                 assert.deepStrictEqual(source, objHello);
                 assert.notDeepStrictEqual(source, objFibo);
             });
