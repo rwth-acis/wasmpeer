@@ -9,7 +9,7 @@ export default class KeyValueStore {
     }
 
     export() {
-        return this.db;
+        return JSON.stringify(this.db, null, 2);
     }
 
     set(key, value) {
