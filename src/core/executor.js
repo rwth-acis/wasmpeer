@@ -1,5 +1,4 @@
 'use strict';
-import fetch from 'node-fetch';
 import Runner from './runner';
 
 export default class Executor {
