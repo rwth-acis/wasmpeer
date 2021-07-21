@@ -10,7 +10,7 @@ export default class Runner {
     }
 
     async run(id, funcName, input) {
-        const { source, store, storeId } = this.storage.getService(id);
+        const { source, store, storeId } = await this.storage.getService(id);
 
         this.keyValueStore = new KeyValueStore(store);
         const res = this.runBasic(source, funcName, input);
