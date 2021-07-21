@@ -2,6 +2,9 @@
   "name": "wasmpeer",
   "version": "0.0.1",
   "description": "A P2P Service Framework with WebAssembly",
+  "engines": {
+    "node": "12"
+  },
   "scripts": {
     "start:node": "node -r esm src/node/index.js",
     "test:node": "mocha -r esm test/main.js"
@@ -31,5 +34,9 @@
     "mocha": "8.3.0",
     "node-fetch": "^2.6.1",
     "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "parcel-bundler": "^1.12.5",
+    "parcel-plugin-static-files-copy": "^2.6.0"
   }
 }

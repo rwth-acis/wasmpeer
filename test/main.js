@@ -10,7 +10,8 @@ describe('CORE', () => {
     describe('Executor', () => {
         describe('#runLocalFile', () => {
             it('Fibo function should return 120 when the value is 5', async () => {
-                const res = await Executor.runLocalFile('./static/wasm/fibo.wasm', 'main', { i: 5 });
+                const objFibo = fs.readFileSync('./static/wasm/fibo.wasm');
+                const res = await Executor.runLocalFile(objFibo, 'main', { i: 5 });
                 assert.strictEqual(res, 120);
             });
         });
