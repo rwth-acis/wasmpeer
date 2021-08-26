@@ -8,9 +8,9 @@
   "scripts": {
     "test": "mocha -r esm test/main.js",
     "build": "parcel build src/browser/index.html",
-    "serve": "node server.js",
+    "serve": "npm run build & node server.js",
     "start:node": "node -r esm src/node/index.js",
-    "start:browser": "parcel index.html --port 1000",
+    "start:browser": "parcel src/browser/index.html --port 1000",
     "bootstrap": "node ./node_modules/webrtc-explorer-signalling-server/src -r index.js "
   },
   "repository": {
