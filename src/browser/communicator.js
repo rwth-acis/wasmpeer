@@ -1,10 +1,13 @@
 import Storage from "./storage";
 import Executor from "../core/executor";
+import Connector from "./connector";
 
 export default class Communicator {
 	constructor(instanceId) {
 		this.instanceId = instanceId;
 		this.storage = new Storage(this.instanceId);
+		this.connector = new Connector();
+		this.executor = new Executor(this.storage, this.connector);
 	}
 
 	async listen(url) {
@@ -17,15 +20,21 @@ export default class Communicator {
 			params = JSON.parse('{"' + decodeURI(search).replace(/"/g, '\\"').replace(/&/g, '","').replace(/=/g, '":"') + '"}');
 		}
 
-		console.log(serviceId, endpoint, params);
-
 		// REMARK: for testing purpose due to unavailability of upload mechanism
 		serviceId = await this.setupForTest();
+		const res = await this.execute(serviceId, endpoint, params);
+		return res;
+	}
 
-		const executor = new Executor(this.storage);
-		const res = await executor.run(serviceId, endpoint, params);
+	async execute(serviceId, endpoint, params) {
+		
+		const res = await this.executor.run(serviceId, endpoint, params);
+		return res;
+	}
 
-		return Promise.resolve(new Response(res.toString()));
+	async callOther(serviceId, endpoint, params) {
+		const res = await this.connector.callFirst();
+		return res;
 	}
 
 	async setupForTest() {

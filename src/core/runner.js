@@ -1,8 +1,9 @@
 'use strict';
 import KeyValueStore from './store/keyvalue';
 export default class Runner {
-    constructor(storage) {
+    constructor(storage, connector) {
         this.storage = storage;
+        this.connector = connector;
         this.keyValueStore = {
             get: () => { },
             set: () => { }

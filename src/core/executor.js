@@ -2,12 +2,13 @@
 import Runner from './runner';
 
 export default class Executor {
-    constructor(storage) {
+    constructor(storage, connector) {
         this.storage = storage;
+        this.connector = connector;
     }
 
     run(id, funcName, input) {
-        const runner = new Runner(this.storage);
+        const runner = new Runner(this.storage, this.connector);
         return runner.run(id, funcName, input);
     }
 

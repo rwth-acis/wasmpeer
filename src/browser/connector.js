@@ -55,7 +55,7 @@ export default class Connector {
   }
 
   async getService(order) {
-    const aa = await fetch('https://wasmpeer.org/e21af0b5-2a5c-4e93-9ee2-d3449fcf23e3/main?i=10').then(resp => resp.text());
+    const aa = await window.wasmpeer.listen('https://wasmpeer.org/e21af0b5-2a5c-4e93-9ee2-d3449fcf23e3/main?i=10');
     return aa;
   }
 
@@ -80,12 +80,14 @@ export default class Connector {
     });
 
     UI.log('ANS:', resp);
+
+    return resp;
   }
 
   callFirst() {
     const list = this.peer.fingerTable.getTable();
     const a = Object.values(list)[0];
 
-    this.call(a.fingerId, null);
+    return this.call(a.fingerId, null);
   }
 }
