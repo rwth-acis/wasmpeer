@@ -3,8 +3,9 @@
   "version": "0.0.1",
   "description": "A P2P Service Framework with WebAssembly",
   "engines": {
-    "node": "12"
+    "node": "14"
   },
+  "type": "module",
   "scripts": {
     "test": "mocha -r esm test/main.js",
     "build": "parcel build test/browser/index.html",
@@ -38,24 +39,28 @@
     "@wasmer/wasm-transformer": "^0.12.0",
     "@wasmer/wasmfs": "^0.12.0",
     "express": "^4.17.1",
-    "libp2p": "latest",
+    "libp2p": "^0.32.4",
     "libp2p-bootstrap": "^0.13.0",
     "libp2p-mplex": "^0.10.4",
     "libp2p-webrtc-star": "^0.23.0",
+    "libp2p-websockets": "^0.16.1",
     "@chainsafe/libp2p-noise": "^4.1.0",
-    "it-pipe": "latest",
+    "it-pipe": "^1.1.0",
     "peer-id": "0.14.0",
-    "wrtc": "^0.4.6",
+    "wrtc": "^0.4.7",
     "localforage": "^1.9.0",
     "node-fetch": "^2.6.1",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
+    "@babel/cli": "^7.13.10",
+    "@babel/core": "^7.13.0",
+    "babel-plugin-syntax-async-functions": "^6.13.0",
+    "babel-plugin-transform-regenerator": "^6.26.0",
     "parcel-bundler": "^1.12.5",
     "parcel-plugin-static-files-copy": "^2.6.0",
     "babel-polyfill": "^6.26.0",
     "npm-watch": "^0.11.0",
-    "mocha": "8.3.0",
-    "esm": "^3.2.25"
+    "mocha": "8.3.0"
   }
 }
