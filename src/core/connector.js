@@ -1,11 +1,12 @@
-const Libp2p = require('libp2p');
-const WebRTCStar = require('libp2p-webrtc-star');
-const Mplex = require('libp2p-mplex');
-const Bootstrap = require('libp2p-bootstrap');
-const { NOISE } = require('@chainsafe/libp2p-noise');
-const wrtc = require('wrtc');
-const pipe = require('it-pipe');
-const PeerId = require('peer-id');
+import Libp2p from 'libp2p';
+import WebRTCStar from 'libp2p-webrtc-star';
+import Websockets from 'libp2p-websockets';
+import Mplex from 'libp2p-mplex';
+import Bootstrap from 'libp2p-bootstrap';
+import { NOISE } from '@chainsafe/libp2p-noise';
+import wrtc from 'wrtc';
+import pipe from 'it-pipe';
+import PeerId from 'peer-id';
 
 export default class Connector {
   constructor(node, log) {
@@ -35,7 +36,7 @@ export default class Connector {
         listen: sigServers
       },
       modules: {
-        transport: [WebRTCStar],
+        transport: [Websockets, WebRTCStar],
         streamMuxer: [Mplex],
         connEncryption: [NOISE],
         peerDiscovery: [Bootstrap]
@@ -57,12 +58,12 @@ export default class Connector {
     });
 
     node.connectionManager.on('peer:disconnect', (connection) => {
-      log(`Disconnected = require('${connection.remotePeer.toB58String()}`)
+      log(`Disconnected from '${connection.remotePeer.toB58String()}`)
     });
   
-    node.on('peer:discovery', (peerId) => {
-      log(`Found peer ${peerId.toB58String()}`)
-    })
+    // node.on('peer:discovery', (peerId) => {
+    //   log(`Found peer ${peerId.toB58String()}`)
+    // })
 
     await node.start();
     log('peerId: ' + node.peerId.toB58String());
