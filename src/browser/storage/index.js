@@ -11,7 +11,13 @@ export default class Storage {
     }
 
     static async build(instanceId) {
-        const catalog = await Catalog.build(instanceId);
+        const catalog = new Catalog(instanceId);
+
+        let bootstrapper = await catalog.lookAt(instanceId).catch(_ => {});
+		if (!bootstrapper) {
+			bootstrapper = await catalog.createWithId(instanceId, 'bootstrapper', JSON.stringify({}));
+		}
+
         return new Storage(catalog);
     }
 

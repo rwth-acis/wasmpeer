@@ -11,15 +11,6 @@ export default class Catalog {
 		this.accessor = new Accessor();
 	}
 
-	static async build(instanceId) {
-		const catalog = new Catalog(instanceId);
-		let bootstrapper = await catalog.lookAt(instanceId).catch(_ => {});
-		if (!bootstrapper) {
-			bootstrapper = await catalog.createWithId(instanceId, 'bootstrapper', JSON.stringify({}));
-		}
-		return catalog;
-	}
-
 	async lookAt(id) {
 		const catalog = await this.load();
 		if (!catalog[id]) {
