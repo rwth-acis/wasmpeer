@@ -11,6 +11,15 @@ export default class Catalog {
 		this.accessor = new Accessor();
 	}
 
+	static async build(instanceId) {
+		const catalog = new Catalog(instanceId);
+		let bootstrapper = await catalog.lookAt(instanceId).catch(_ => {});
+		if (!bootstrapper) {
+			bootstrapper = await catalog.createWithId(instanceId, 'bootstrapper', JSON.stringify({}));
+		}
+		return catalog;
+	}
+
 	async lookAt(id) {
 		const catalog = await this.load();
 		if (!catalog[id]) {
@@ -19,8 +28,12 @@ export default class Catalog {
 		return catalog[id];
 	}
 
-	async new(name) {
+	new(name) {
 		const id = uuid_v4();
+		return this.newWithId(id, name);
+	}
+
+	async newWithId(id, name) {
 		const entry = {
 			path: this.targetDir + id,
 			id: id
@@ -31,6 +44,9 @@ export default class Catalog {
 		}
 
 		const db = await this.load();
+		if (db[id]) {
+			throw new Error('entry id is being used');
+		}
 		db[id] = entry;
 
 		await this.save(db);
@@ -39,6 +55,12 @@ export default class Catalog {
 
 	async create(name, object) {
 		const entry = await this.new(name);
+		await this.accessor.put(entry.path, object);
+		return entry;
+	}
+
+	async createWithId(id, name, object) {
+		const entry = await this.newWithId(id, name);
 		await this.accessor.put(entry.path, object);
 		return entry;
 	}

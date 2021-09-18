@@ -6,8 +6,13 @@ import Catalog from './catalog';
 const storeFileIdentifier = '_store';
 const sourceFileIdentifier = '_source';
 export default class Storage {
-    constructor(instanceId) {
-        this.catalog = new Catalog(instanceId);
+    constructor(catalog) {
+        this.catalog = catalog;
+    }
+
+    static async build(instanceId) {
+        const catalog = await Catalog.build(instanceId);
+        return new Storage(catalog);
     }
 
     async storeService(filename, object) {
@@ -48,6 +53,6 @@ export default class Storage {
 
     async read(id) {
         const entry = await this.catalog.getJSON(id);
-        return (await this.catalog.get(entry.path));
+        return entry;
     }
 }
