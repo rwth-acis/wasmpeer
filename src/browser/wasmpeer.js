@@ -1,13 +1,36 @@
+import Connector from '../core/connector';
 import Storage from "./storage";
 import Executor from "../core/executor";
-import Connector from "./connector";
+import { v4 as uuidv4 } from 'uuid';
 
-export default class Communicator {
-	constructor(instanceId) {
+export default class Wasmpeer {
+	constructor(instanceId, storage, connector, executor) {
 		this.instanceId = instanceId;
-		this.storage = new Storage(this.instanceId);
-		this.connector = new Connector();
-		this.executor = new Executor(this.storage, this.connector);
+		this.storage = storage;
+		this.connector = connector;
+		this.executor = executor;
+		this.connector.invoker = this.listen.bind(this);
+	}
+
+	static async build(instanceId, config) {
+
+		if (!instanceId) {
+			instanceId = uuidv4();
+		}
+		const storage = await Storage.build(instanceId);
+
+		let peerId = await storage.read(instanceId).catch(_ => { });
+		const connector = await Connector.build(peerId, config);
+		if (!peerId) {
+			await storage.update(instanceId, JSON.stringify(connector.node.peerId.toJSON()));
+		}
+		const executor = new Executor(storage, connector);
+
+		return new Wasmpeer(instanceId, storage, connector, executor);
+	}
+
+	invoke(targetPeerId, method, parameter) {
+		return this.connector.call(targetPeerId, method, parameter);
 	}
 
 	async listen(url) {
@@ -27,7 +50,7 @@ export default class Communicator {
 	}
 
 	async execute(serviceId, endpoint, params) {
-		
+
 		const res = await this.executor.run(serviceId, endpoint, params);
 		return res;
 	}
@@ -43,7 +66,7 @@ export default class Communicator {
 
 		const filename = path1.replace(/^.*[\\\/]/, '')
 		const id = await this.storage.storeService(filename, objFibo);
-		
+
 		return id;
 	}
 }
