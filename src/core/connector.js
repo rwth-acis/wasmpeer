@@ -7,11 +7,57 @@ import { NOISE } from '@chainsafe/libp2p-noise';
 import wrtc from 'wrtc';
 import pipe from 'it-pipe';
 import PeerId from 'peer-id';
+import { v4 as uuidv4 } from 'uuid';
 
 export default class Connector {
   constructor(node, log) {
     this.node = node;
     this.log = log;
+    this.callStack = {};
+    this.invoker = () => {};
+
+    node.handle(node.peerId.toB58String(), async ({ connection, stream }) => {
+      try {
+        await pipe(
+          stream,
+          async (source) => {
+            for await (const message of source) {
+              const req = JSON.parse(String(message));
+
+              if (req.type === 'ANS') {
+                if (!this.callStack[req.callId]) {
+                  throw new Error('Incoming not recognized: ', req.callId);
+                }
+                this.callStack[req.callId](req);
+                this.callStack[req.callId] = null;
+              } else {
+                // UI.log('INCOMING REQ: ', req.callId);
+                const resp = await this.invoker('https://wasmpeer.org/e21af0b5-2a5c-4e93-9ee2-d3449fcf23e3/main?i=10');
+
+                const payload = {
+                  type: 'ANS',
+                  req: req,
+                  callId: req.callId,
+                  data: resp
+                };
+
+                try {        
+                  const { stream } = await connection.newStream([connection.remotePeer.toB58String()])
+                  await Invocator.send(JSON.stringify(payload), stream);
+                  return;
+                } catch (err) {
+                  console.error('Could not negotiate chat protocol stream with peer', err)
+                }
+              }
+            }
+          }
+        )
+  
+        await pipe([], stream)
+      } catch (err) {
+        console.error(err)
+      }
+    });
   }
 
   static buildNodeJs(peerId, params = {}) {
@@ -28,7 +74,7 @@ export default class Connector {
     
     transport = transport || {};
     log = log || (() => {});
-    peerId = peerId || await PeerId.create();
+    peerId = peerId ? (await PeerId.createFromJSON(peerId)) : await PeerId.create();
 
     const node = await Libp2p.create({
       peerId: peerId,
@@ -67,7 +113,6 @@ export default class Connector {
 
     await node.start();
     log('peerId: ' + node.peerId.toB58String());
-    node.handle(node.peerId.toB58String(), Invocator.handler);
 
     return new Connector(node, log);
   }
@@ -78,19 +123,14 @@ export default class Connector {
       const peerId = peerData.id.toB58String();
       if (targetPeerId !== peerId) return;
 
-
       let connection = this.node.connectionManager.get(peerData.id)
       if (!connection) {
         connection = await this.node.dial(peerData.id);
       }
-      console.log(peerId);
+
       if (!connection) return;
 
-      
-
       try {
-
-        
         const { stream } = await connection.newStream([peerId])
         await Invocator.send(message, stream);
       } catch (err) {
@@ -98,6 +138,55 @@ export default class Connector {
       }
     })
   }
+
+  async invoke(targetPeerId, payload) {
+    this.node.peerStore.peers.forEach(async peerData => {
+      const peerId = peerData.id.toB58String();
+      if (targetPeerId !== peerId) return;
+
+      let connection = this.node.connectionManager.get(peerData.id)
+      if (!connection) {
+        connection = await this.node.dial(peerData.id);
+      }
+      if (!connection) return;
+
+      try {        
+        const { stream } = await connection.newStream([peerId])
+        await Invocator.send(JSON.stringify(payload), stream);
+        return;
+      } catch (err) {
+        console.error('Could not negotiate chat protocol stream with peer', err)
+      }
+    })
+  }
+
+  async call(targetPeerId, method, parameter) {
+    const payload = {
+      callId: uuidv4(),
+      method: method,
+      type: 'GET',
+      serviceId: 'abcdef',
+      parameter: parameter
+    };
+
+    const ress = new Promise((resolve, reject) => {
+      this.invoke(targetPeerId, payload);
+      this.callStack[payload.callId] = resolve;
+    });
+
+    const resp = await ress.then(x => {
+      return x.data;
+    });
+
+    return resp;
+  }
+
+  // callFirst() {
+  //   const list = this.peer.fingerTable.getTable();
+  //   const a = Object.values(list)[0];
+
+  //   return this.call(a.fingerId, null);
+  // }
 }
 
 const Invocator = {
