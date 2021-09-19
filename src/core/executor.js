@@ -1,5 +1,5 @@
 'use strict';
-import Runner from './runner';
+import Runner from './runner.js';
 
 export default class Executor {
     constructor(storage, connector) {

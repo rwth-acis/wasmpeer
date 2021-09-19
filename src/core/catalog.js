@@ -1,14 +1,10 @@
 import { v4 as uuid_v4 } from 'uuid';
-import Accessor from './accessor';
 
 export default class Catalog {
-	constructor(instanceId) {
-		const dir = 'wasmpeer/storage/' + instanceId + '/';
+	catalogPath = 'catalog';
 
-		this.targetDir = dir;
-		this.catalogPath = dir + 'catalog';
-
-		this.accessor = new Accessor();
+	constructor(accessor) {
+		this.accessor = accessor;
 	}
 
 	async lookAt(id) {
@@ -26,7 +22,7 @@ export default class Catalog {
 
 	async newWithId(id, name) {
 		const entry = {
-			path: this.targetDir + id,
+			path: id,
 			id: id
 		};
 
@@ -70,7 +66,7 @@ export default class Catalog {
 	}
 
 	load() {
-		return this.accessor.fetch(this.catalogPath).then(values => values ? JSON.parse(values) : {});
+		return this.accessor.fetch(this.catalogPath).catch(_ => {}).then(values => values ? JSON.parse(values) : {});
 	}
 
 	save(object) {

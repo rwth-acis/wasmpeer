@@ -1,6 +1,8 @@
-import Connector from '../core/connector';
-import Storage from "./storage";
-import Executor from "../core/executor";
+import Connector from './core/connector.js';
+import Storage from "./core/storage.js";
+import Executor from "./core/executor.js";
+import AccessorBrowser from './browser/accessor.js';
+import AccessorNodeJs from './node/accessor.js';
 import { v4 as uuidv4 } from 'uuid';
 
 export default class Wasmpeer {
@@ -12,21 +14,33 @@ export default class Wasmpeer {
 		this.connector.invoker = this.listen.bind(this);
 	}
 
-	static async build(instanceId, config) {
-
+	static async build(instanceId, Accessor, ConnectorBuilder, config) {
 		if (!instanceId) {
 			instanceId = uuidv4();
 		}
-		const storage = await Storage.build(instanceId);
+		const accessor = new Accessor(instanceId);
+		const storage = new Storage(accessor);
 
-		let peerId = await storage.read(instanceId).catch(_ => { });
-		const connector = await Connector.build(peerId, config);
+		let peerId = await storage.read(instanceId).catch(async _ => {
+			await storage.createWithId(instanceId, 'bootstrapper', JSON.stringify({}));
+		});
+		peerId = peerId && peerId.id ? peerId : null;
+
+		const connector = await ConnectorBuilder(peerId, config);
 		if (!peerId) {
 			await storage.update(instanceId, JSON.stringify(connector.node.peerId.toJSON()));
 		}
 		const executor = new Executor(storage, connector);
 
 		return new Wasmpeer(instanceId, storage, connector, executor);
+	}
+
+	static buildBrowser(instanceId, config) {
+		return Wasmpeer.build(instanceId, AccessorBrowser, Connector.build, config);
+	}
+
+	static buildNodeJS(instanceId, config) {
+		return Wasmpeer.build(instanceId, AccessorNodeJs, Connector.buildNodeJs, config);
 	}
 
 	invoke(targetPeerId, method, parameter) {

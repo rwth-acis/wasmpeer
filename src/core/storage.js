@@ -1,24 +1,11 @@
 'use strict';
-// REMARK: this is still a duplicate of storage in node.js.
-// later will be moved to core components since this could be an interface
-import Catalog from './catalog';
+import Catalog from './catalog.js';
 
 const storeFileIdentifier = '_store';
 const sourceFileIdentifier = '_source';
 export default class Storage {
-    constructor(catalog) {
-        this.catalog = catalog;
-    }
-
-    static async build(instanceId) {
-        const catalog = new Catalog(instanceId);
-
-        let bootstrapper = await catalog.lookAt(instanceId).catch(_ => {});
-		if (!bootstrapper) {
-			bootstrapper = await catalog.createWithId(instanceId, 'bootstrapper', JSON.stringify({}));
-		}
-
-        return new Storage(catalog);
+    constructor(accessor) {
+        this.catalog = new Catalog(accessor);
     }
 
     async storeService(filename, object) {
@@ -57,8 +44,11 @@ export default class Storage {
         return this.catalog.update(id, object);
     }
 
-    async read(id) {
-        const entry = await this.catalog.getJSON(id);
-        return entry;
+    read(id) {
+        return this.catalog.getJSON(id);
+    }
+
+    createWithId(id, name, object) {
+        return this.catalog.createWithId(id, name, object);
     }
 }

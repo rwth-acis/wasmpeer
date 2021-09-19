@@ -1,5 +1,5 @@
 import 'babel-polyfill';
-import Wasmpeer from '../../src/browser/wasmpeer';
+import Wasmpeer from '../../src/index.js';
 
 const _config = {
 	sigServers: [
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 		output.textContent += `${txt.trim()}\n`
 	}
 
-	const wasmpeer = await Wasmpeer.build(instanceId, {
+	const wasmpeer = await Wasmpeer.buildBrowser(instanceId, {
 		log,
 		..._config
 	});

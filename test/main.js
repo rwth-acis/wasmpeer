@@ -1,10 +1,10 @@
 'use strict';
-const assert = require('assert');
-const { default: Executor } = require('../src/core/executor');
-const { default: Storage } = require('../src/node/storage');
-const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
-const instanceId = 'f5e9de80-e9f2-4fcd-8ea0-2e089565ae9p';
+import assert from 'assert';
+import Executor from '../src/core/executor.js';
+import Storage from '../src/core/storage.js';
+import Accessor from '../src/node/accessor.js';
+import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 
 describe('CORE', () => {
     describe('Executor', () => {
@@ -18,7 +18,9 @@ describe('CORE', () => {
     });
 
     describe('Storage', () => {
-        const storage = new Storage(uuidv4());
+        const instanceId = uuidv4();
+        const accessor = new Accessor(instanceId);
+        const storage = new Storage(accessor);
         const path1 = './static/wasm/fibo.wasm';
         const path2 = './static/wasm/helloworld.wasm';
         const objFibo = fs.readFileSync(path1);
@@ -26,7 +28,7 @@ describe('CORE', () => {
         describe('#create', () => {
             it('Function will create a new entry to the catalog and save the file', async () => {
                 const filename = path1.replace(/^.*[\\\/]/, '')
-                id = storage.storeService(filename, objFibo);
+                id = await storage.storeService(filename, objFibo);
                 assert.ok(id);
             });
         });
@@ -51,7 +53,9 @@ describe('CORE', () => {
 
 describe('SERVER', () => {
     let id = '';
-    const storage = new Storage(instanceId);
+    const instanceId = uuidv4();
+    const accessor = new Accessor(instanceId);
+    const storage = new Storage(accessor);
     describe('Execute a fibo function from storage', async () => {
         it('Storage will store the source of the wasm file and will return the id of the file in the storage', async () => {
             
@@ -59,7 +63,7 @@ describe('SERVER', () => {
             const objFibo = fs.readFileSync(path1);
 
             const filename = path1.replace(/^.*[\\\/]/, '')
-            id = storage.storeService(filename, objFibo);
+            id = await storage.storeService(filename, objFibo);
             assert.ok(id);
         });
         it('Executor will execute the fibo function with input 5, and gives return value of 120', async () => {
