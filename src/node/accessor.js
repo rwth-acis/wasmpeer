@@ -11,14 +11,14 @@ export default class Accessor {
 		// TODO: fomulate encryption/decryption key
 	}
 
-	put(path, object) {
+	async put(path, object) {
 		const encrypted = this.encrypt(object);
-		return fs.writeFileSync(this.targetDir + path, encrypted);
+		return Promise.resolve(fs.writeFileSync(this.targetDir + path, encrypted));
 	}
 
-	fetch(path) {
+	async fetch(path) {
 		const raw = fs.readFileSync(this.targetDir + path);
-		return this.decrypt(raw);
+		return Promise.resolve(this.decrypt(raw));
 	}
 
 	encrypt(inp) {

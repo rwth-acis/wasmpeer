@@ -1,7 +1,5 @@
 'use strict';
-// REMARK: this is still a duplicate of storage in node.js.
-// later will be moved to core components since this could be an interface
-import Catalog from './catalog';
+import Catalog from './catalog.js';
 
 const storeFileIdentifier = '_store';
 const sourceFileIdentifier = '_source';

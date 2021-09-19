@@ -1,5 +1,5 @@
 'use strict';
-import Wasmpeer from '../../src/node/index.js';
+import Wasmpeer from '../../src/index.js';
 import express from 'express';
 
 const _config = {
@@ -18,11 +18,11 @@ const _config = {
 
 (async () => {
   // REMARK: InstanceId will be stored in the local storage, including port
-  const instanceId = 'f5e9de80-e9f2-4fcd-8ea0-2e089565ae9p';
+  const instanceId = 'f5e9de80-e9f2-4fcd-8ea0-2e089544ae9p';
   const port = 3000;
 
   _config.log = console.log;
-  const wasmpeer = await Wasmpeer.build(instanceId, _config);
+  const wasmpeer = await Wasmpeer.buildNodeJS(instanceId, _config);
 
   const app = express();
   const listener = async (req, res) => {
