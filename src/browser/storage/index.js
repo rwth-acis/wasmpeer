@@ -6,8 +6,19 @@ import Catalog from './catalog';
 const storeFileIdentifier = '_store';
 const sourceFileIdentifier = '_source';
 export default class Storage {
-    constructor(instanceId) {
-        this.catalog = new Catalog(instanceId);
+    constructor(catalog) {
+        this.catalog = catalog;
+    }
+
+    static async build(instanceId) {
+        const catalog = new Catalog(instanceId);
+
+        let bootstrapper = await catalog.lookAt(instanceId).catch(_ => {});
+		if (!bootstrapper) {
+			bootstrapper = await catalog.createWithId(instanceId, 'bootstrapper', JSON.stringify({}));
+		}
+
+        return new Storage(catalog);
     }
 
     async storeService(filename, object) {
@@ -48,6 +59,6 @@ export default class Storage {
 
     async read(id) {
         const entry = await this.catalog.getJSON(id);
-        return (await this.catalog.get(entry.path));
+        return entry;
     }
 }
