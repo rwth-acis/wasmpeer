@@ -19,9 +19,11 @@ export default class Wasmpeer {
 			instanceId = uuidv4();
 		}
 		const accessor = new Accessor(instanceId);
-		const storage = await Storage.build(instanceId, accessor);
+		const storage = new Storage(accessor);
 
-		let peerId = await storage.read(instanceId).catch(_ => { });
+		let peerId = await storage.read(instanceId).catch(async _ => {
+			await storage.createWithId(instanceId, 'bootstrapper', JSON.stringify({}));
+		});
 		peerId = peerId && peerId.id ? peerId : null;
 
 		const connector = await ConnectorBuilder(peerId, config);

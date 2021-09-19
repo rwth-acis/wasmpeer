@@ -4,19 +4,8 @@ import Catalog from './catalog.js';
 const storeFileIdentifier = '_store';
 const sourceFileIdentifier = '_source';
 export default class Storage {
-    constructor(catalog) {
-        this.catalog = catalog;
-    }
-
-    static async build(instanceId, accessor) {
-        const catalog = new Catalog(accessor);
-
-        let bootstrapper = await catalog.lookAt(instanceId).catch(_ => {});
-		if (!bootstrapper) {
-			bootstrapper = await catalog.createWithId(instanceId, 'bootstrapper', JSON.stringify({}));
-		}
-
-        return new Storage(catalog);
+    constructor(accessor) {
+        this.catalog = new Catalog(accessor);
     }
 
     async storeService(filename, object) {
@@ -57,5 +46,9 @@ export default class Storage {
 
     read(id) {
         return this.catalog.getJSON(id);
+    }
+
+    createWithId(id, name, object) {
+        return this.catalog.createWithId(id, name, object);
     }
 }
