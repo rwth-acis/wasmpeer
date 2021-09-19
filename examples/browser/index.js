@@ -1,5 +1,5 @@
 import 'babel-polyfill';
-import Wasmpeer from '../../src/browser/wasmpeer';
+import Wasmpeer from '../../src/browser/index.js';
 
 const _config = {
 	sigServers: [
