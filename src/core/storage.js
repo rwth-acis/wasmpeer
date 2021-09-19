@@ -10,8 +10,8 @@ export default class Storage {
         this.catalog = catalog;
     }
 
-    static async build(instanceId) {
-        const catalog = new Catalog(instanceId);
+    static async build(instanceId, accessor) {
+        const catalog = new Catalog(accessor);
 
         let bootstrapper = await catalog.lookAt(instanceId).catch(_ => {});
 		if (!bootstrapper) {
@@ -57,8 +57,7 @@ export default class Storage {
         return this.catalog.update(id, object);
     }
 
-    async read(id) {
-        const entry = await this.catalog.getJSON(id);
-        return entry;
+    read(id) {
+        return this.catalog.getJSON(id);
     }
 }

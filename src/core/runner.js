@@ -1,5 +1,5 @@
 'use strict';
-import KeyValueStore from './store/keyvalue';
+import KeyValueStore from './store/keyvalue.js';
 export default class Runner {
     constructor(storage, connector) {
         this.storage = storage;

@@ -9,17 +9,18 @@ localforage.config({
 });
 
 export default class Accessor {
-	constructor() {
+	constructor(instanceId) {
+		this.targetDir = 'wasmpeer/storage/' + instanceId + '/';
 		// TODO: fomulate encryption/decryption key
 	}
 
 	put(path, object) {
 		const encrypted = this.encrypt(object);
-		return localforage.setItem(path, encrypted);
+		return localforage.setItem(this.targetDir + path, encrypted);
 	}
 
 	fetch(path) {
-		return localforage.getItem(path).then(raw => this.decrypt(raw));
+		return localforage.getItem(this.targetDir + path).then(raw => this.decrypt(raw));
 	}
 
 	encrypt(inp) {

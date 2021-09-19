@@ -1,6 +1,7 @@
 import Connector from '../core/connector';
-import Storage from "./storage";
+import Storage from "../core/storage";
 import Executor from "../core/executor";
+import Accessor from './accessor';
 import { v4 as uuidv4 } from 'uuid';
 
 export default class Wasmpeer {
@@ -17,9 +18,12 @@ export default class Wasmpeer {
 		if (!instanceId) {
 			instanceId = uuidv4();
 		}
-		const storage = await Storage.build(instanceId);
+		const accessor = new Accessor(instanceId);
+		const storage = await Storage.build(instanceId, accessor);
 
 		let peerId = await storage.read(instanceId).catch(_ => { });
+		peerId = peerId && peerId.id ? peerId : null;
+
 		const connector = await Connector.build(peerId, config);
 		if (!peerId) {
 			await storage.update(instanceId, JSON.stringify(connector.node.peerId.toJSON()));
