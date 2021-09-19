@@ -1,11 +1,11 @@
 'use strict';
-const assert = require('assert');
-const { default: Executor } = require('../src/core/executor');
-const { default: Storage } = require('../src/node/storage');
-const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
-const instanceId = 'f5e9de80-e9f2-4fcd-8ea0-2e089565ae9p';
+import assert from 'assert';
+import Executor from '../src/core/executor.js';
+import Storage from '../src/core/storage.js';
+import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 
+const instanceId = 'f5e9de80-e9f2-4fcd-8ea0-2e089565ae9p';
 describe('CORE', () => {
     describe('Executor', () => {
         describe('#runLocalFile', () => {

@@ -7,7 +7,7 @@
   },
   "type": "module",
   "scripts": {
-    "test": "mocha -r esm test/main.js",
+    "test": "mocha test/main.js",
     "build": "parcel build test/browser/index.html",
     "serve": "npm run build & node server.js",
     "start:node": "node examples/node/index.js",
