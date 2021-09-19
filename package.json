@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "test": "mocha test/main.js",
-    "build": "parcel build test/browser/index.html",
+    "build": "parcel build examples/browser/index.html",
     "serve": "npm run build & node server.js",
     "start:node": "node examples/node/index.js",
     "start:browser": "parcel examples/browser/index.html --port 1000",
