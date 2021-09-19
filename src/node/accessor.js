@@ -3,7 +3,6 @@ import fs from 'fs';
 import os from 'os';
 export default class Accessor {
 	constructor(instanceId) {
-
 		this.targetDir = os.tmpdir() + '/wasmpeer/storage/' + instanceId + '/';
 		if (!fs.existsSync(this.targetDir)) {
 			fs.mkdirSync(this.targetDir, { recursive: true });
