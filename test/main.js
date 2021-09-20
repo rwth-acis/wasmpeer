@@ -19,7 +19,7 @@ describe('COMPONENTS', () => {
         describe('#create', () => {
             it('Function will create a new entry to the catalog and save the file', async () => {
                 const filename = path1.replace(/^.*[\\\/]/, '')
-                id = await storage.storeService(filename, objMain);
+                id = await storage.storeService(filename, objMain, '', {});
                 assert.ok(id);
             });
         });
