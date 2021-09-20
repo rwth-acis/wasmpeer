@@ -33,14 +33,39 @@ export default class Runner {
         
         const mod = await loader.instantiate(new Uint8Array(source), importObject);
 
+        const args = this.argsMapper(input, mod.exports);
         const func = mod.instance.exports[funcName];
         const res = func.apply(this, args);
 
-        return res;
+        return this.resMapper(res, returnType, mod.exports);
     }
 
     // TODO: #3 simple mapper for now, more advance mapping technique like descriptor file is planned
-    argsMapper(input, descriptor) {
-        return input ? Object.values(input) : null;
+    argsMapper(input, exports) {
+        return input ? Object.values(input).map(x => {
+            if (!isNaN(x)) {
+                return Number(x);
+            }
+            else if (typeof x === 'string' || x instanceof String) {
+                return exports.__newString(x);
+            }
+        }) : null;
+    }
+
+    resMapper(input, type, exports) {
+        switch(type) {
+            case 'usize': 
+                return exports.__getString(input);
+            default:
+                return input;
+        }
+        return input ? Object.values(input).map(x => {
+            if (!isNaN(x)) {
+                return Number(x);
+            }
+            else if (typeof x === 'string' || x instanceof String) {
+                return exports.__newString(x);
+            }
+        }) : null;
     }
 }

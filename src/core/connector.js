@@ -89,7 +89,7 @@ export default class Connector {
       },
       config: {
         peerDiscovery: {
-          autoDial: true,
+          autoDial: false,
           [Bootstrap.tag]: {
             enabled: true,
             list: bootstrappers
