@@ -1,5 +1,6 @@
 'use strict';
 import KeyValueStore from './keyvalue-store.js';
+import loader from "@assemblyscript/loader";
 export default class Runner {
     constructor(storage, connector) {
         this.storage = storage;
@@ -11,16 +12,15 @@ export default class Runner {
     }
 
     async run(id, funcName, input) {
-        const { source, store, storeId } = await this.storage.getService(id);
+        const service = await this.storage.getService(id);
+        this.keyValueStore = new KeyValueStore(service.store);
+        const res = this.runBasic(service.source, funcName, input, service.meta[funcName].returnType);
 
-        this.keyValueStore = new KeyValueStore(store);
-        const res = this.runBasic(source, funcName, input);
-
-        this.storage.update(storeId, this.keyValueStore.export());
+        this.storage.update(service.storeId, this.keyValueStore.export());
         return res;
     }
 
-    async runBasic(source, funcName, input) {
+    async runBasic(source, funcName, input, returnType) {
         const importObject = {
             main: {
                 kvstore_get: (key) => this.keyValueStore.get(key),
@@ -30,9 +30,9 @@ export default class Runner {
             },
             env: {}
         }
-        const mod = await WebAssembly.instantiate(new Uint8Array(source), importObject);
+        
+        const mod = await loader.instantiate(new Uint8Array(source), importObject);
 
-        const args = this.argsMapper(input);
         const func = mod.instance.exports[funcName];
         const res = func.apply(this, args);
 

@@ -3,18 +3,24 @@ import Catalog from './catalog.js';
 
 const storeFileIdentifier = '_store';
 const sourceFileIdentifier = '_source';
+const rawFileIdentifier = '_raw';
+const metaFileIdentifier = '_meta';
 export default class Storage {
     constructor(accessor) {
         this.catalog = new Catalog(accessor);
     }
 
-    async storeService(filename, object) {
+    async storeService(filename, object, objectRaw, objectMeta) {
         const source = await this.catalog.create(filename, object);
+        const raw = await this.catalog.create(null, objectRaw);
+        const meta = await this.catalog.create(null, JSON.stringify(objectMeta, null, 2));
         const store = await this.catalog.create(null, JSON.stringify({}, null, 2));
 
         const detail = JSON.stringify({
             [storeFileIdentifier]: store.id,
-            [sourceFileIdentifier]: source.id
+            [sourceFileIdentifier]: source.id,
+            [rawFileIdentifier]: raw.id,
+            [metaFileIdentifier]: meta.id
         }, null, 2);
 
         const entry = await this.catalog.create(filename, detail);
@@ -24,14 +30,16 @@ export default class Storage {
 
     async getService(id) {
         const entry = await this.catalog.getJSON(id);
-        const source = await this.catalog.get(entry[sourceFileIdentifier]);
+        const source = await this.catalog.get(entry[sourceFileIdentifier]);        
         const store = await this.catalog.getJSON(entry[storeFileIdentifier]);
-
+        const meta = await this.catalog.getJSONSafe(entry[metaFileIdentifier]);
         return {
             sourceId: entry[sourceFileIdentifier],
             storeId: entry[storeFileIdentifier],
+            metaId: entry[metaFileIdentifier],
             source: source,
-            store: store
+            store: store,
+            meta: meta
         };
     }
 

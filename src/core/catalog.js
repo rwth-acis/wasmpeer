@@ -65,6 +65,10 @@ export default class Catalog {
 		return this.get(id).then(values => JSON.parse(values));
 	}
 
+	getJSONSafe(id) {
+		return this.getJSON(id).catch(_ => {});
+	}
+
 	load() {
 		return this.accessor.fetch(this.catalogPath).catch(_ => {}).then(values => values ? JSON.parse(values) : {});
 	}
