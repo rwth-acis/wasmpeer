@@ -2,8 +2,8 @@
 import KeyValueStore from './keyvalue-store.js';
 import loader from "@assemblyscript/loader";
 export default class Runner {
-    constructor(storage, connector) {
-        this.storage = storage;
+    constructor(manager, connector) {
+        this.manager = manager;
         this.connector = connector;
         this.keyValueStore = {
             get: () => { },
@@ -12,15 +12,15 @@ export default class Runner {
     }
 
     async run(id, funcName, input) {
-        const service = await this.storage.getService(id);
+        const service = await this.manager.getService(id);
         this.keyValueStore = new KeyValueStore(service.store);
-        const res = this.runBasic(service.source, funcName, input, service.meta[funcName].returnType);
+        const res = this.runBasic(service.source, funcName, input, service.meta[funcName]);
 
-        this.storage.update(service.storeId, this.keyValueStore.export());
+        this.manager.update(service.storeId, this.keyValueStore.export());
         return res;
     }
 
-    async runBasic(source, funcName, input, returnType) {
+    async runBasic(source, funcName, input, meta = {}) {
         const importObject = {
             main: {
                 kvstore_get: (key) => this.keyValueStore.get(key),
@@ -33,15 +33,15 @@ export default class Runner {
         
         const mod = await loader.instantiate(new Uint8Array(source), importObject);
 
-        const args = this.argsMapper(input, mod.exports);
+        const args = this.argsMapper(input, meta.paramsType, mod.exports);
         const func = mod.instance.exports[funcName];
         const res = func.apply(this, args);
 
-        return this.resMapper(res, returnType, mod.exports);
+        return this.resMapper(res, meta.returnType, mod.exports);
     }
 
     // TODO: #3 simple mapper for now, more advance mapping technique like descriptor file is planned
-    argsMapper(input, exports) {
+    argsMapper(input, paramsType, exports) {
         return input ? Object.values(input).map(x => {
             if (!isNaN(x)) {
                 return Number(x);
@@ -59,13 +59,5 @@ export default class Runner {
             default:
                 return input;
         }
-        return input ? Object.values(input).map(x => {
-            if (!isNaN(x)) {
-                return Number(x);
-            }
-            else if (typeof x === 'string' || x instanceof String) {
-                return exports.__newString(x);
-            }
-        }) : null;
     }
 }

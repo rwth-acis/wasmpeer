@@ -21,18 +21,18 @@ const output = document.getElementById('output')
 output.textContent = ''
 
 document.addEventListener('DOMContentLoaded', async () => {
-	const key = getParameter('key');	
+	const key = getParameter('key');
 	if (key) {
-		let instanceId = localStorage.getItem('wasmpeer_'+key);
+		let instanceId = localStorage.getItem('wasmpeer_' + key);
 		if (!instanceId) {
 			instanceId = uuidv4();
-			localStorage.setItem('wasmpeer_'+key, instanceId);
+			localStorage.setItem('wasmpeer_' + key, instanceId);
 		}
 		status.innerText = 'wasmpeer starting...';
 		const log = (txt) => {
 			output.textContent += `${txt.trim()}\n`
 		}
-	
+
 		const wasmpeer = await Wasmpeer.buildBrowser(instanceId, {
 			log,
 			..._config
@@ -55,10 +55,10 @@ const getParameter = (parameterName) => {
 	let tmp = [];
 	let items = location.search.substr(1).split('&');
 	for (let index = 0; index < items.length; index++) {
-			tmp = items[index].split('=');
-			if (tmp[0] === parameterName) {
-				result = tmp[1];
-			}
+		tmp = items[index].split('=');
+		if (tmp[0] === parameterName) {
+			result = tmp[1];
+		}
 	}
 	return result;
 }

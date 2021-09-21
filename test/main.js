@@ -2,16 +2,17 @@
 import assert from 'assert';
 import Executor from '../src/core/executor.js';
 import Storage from '../src/core/storage.js';
-import Accessor from '../src/node/accessor.js';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import Compiler from '../src/utils/compiler.js';
+import Manager from '../src/core/manager.js';
 
 describe('COMPONENTS', () => { 
-    describe('Storage', () => {
+    describe('Manager', () => {
         const instanceId = uuidv4();
-        const accessor = new Accessor(instanceId);
-        const storage = new Storage(accessor);
+        const storage = Storage.buildNodeJS(instanceId);
+        const manager = new Manager(storage);
+
         const path1 = './static/wasm/main.wasm';
         const path2 = './static/wasm/helloworld.wasm';
         const objMain = fs.readFileSync(path1);
@@ -19,22 +20,22 @@ describe('COMPONENTS', () => {
         describe('#create', () => {
             it('Function will create a new entry to the catalog and save the file', async () => {
                 const filename = path1.replace(/^.*[\\\/]/, '')
-                id = await storage.storeService(filename, objMain, '', {});
+                id = await manager.storeService(filename, objMain, '', {});
                 assert.ok(id);
             });
         });
         describe('#read', () => {
             it('Function will read the new entry from the catalog and the file should be the same', async () => {
-                const { source } = await storage.getService(id);
+                const { source } = await manager.getService(id);
                 assert.deepStrictEqual(source, objMain);
             });
         });
         describe('#update', () => {
             it('Function will update the entry from the catalog and the file should be the updated', async () => {
                 const objHello = fs.readFileSync(path2);
-                storage.updateService(id, objHello);
+                manager.updateService(id, objHello);
 
-                const { source } = await storage.getService(id);
+                const { source } = await manager.getService(id);
                 assert.deepStrictEqual(source, objHello);
                 assert.notDeepStrictEqual(source, objMain);
             });
@@ -45,8 +46,8 @@ describe('COMPONENTS', () => {
 describe('SERVICES', () => {
     let id = '';
     const instanceId = uuidv4();
-    const accessor = new Accessor(instanceId);
-    const storage = new Storage(accessor);
+    const storage = Storage.buildNodeJS(instanceId);
+    const manager = new Manager(storage);
 
     describe('Calculator service', async () => {
         let service = null;
@@ -69,12 +70,12 @@ describe('SERVICES', () => {
 
         it('Store the service to storage', async () => {
             const filename = path1.replace(/^.*[\\\/]/, '')
-            id = await storage.storeService(filename, service.source, service.raw, service.meta);
+            id = await manager.storeService(filename, service.source, service.raw, service.meta);
             assert.ok(id);
         });
 
         describe('Execute the service', () => {
-            const executor = new Executor(storage);
+            const executor = new Executor(manager);
 
             it('Add 5 and 6 returns 11', async () => {
                 const res = await executor.run(id, 'add', { x: 5, y: 6 });
@@ -120,13 +121,13 @@ describe('SERVICES', () => {
 
         it('Store the service to storage', async () => {
             const filename = path1.replace(/^.*[\\\/]/, '')
-            id = await storage.storeService(filename, service.source, service.raw, service.meta);
+            id = await manager.storeService(filename, service.source, service.raw, service.meta);
             assert.ok(id);
         });
 
         
         describe('Execute the service', () => {
-            const executor = new Executor(storage);
+            const executor = new Executor(manager);
             it('Concat "hello " and "world" returns "hello world"', async () => {
                 const res = await executor.run(id, 'concat', { a: 'hello ', b: 'world' });
                 assert.strictEqual(res, 'hello world');
