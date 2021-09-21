@@ -1,62 +1,88 @@
-'use strict';
-import Catalog from './catalog.js';
-
-const storeFileIdentifier = '_store';
-const sourceFileIdentifier = '_source';
-const rawFileIdentifier = '_raw';
-const metaFileIdentifier = '_meta';
+import { v4 as uuid_v4 } from 'uuid';
+import AccessorBrowser from '../browser/accessor.js';
+import AccessorNodeJs from '../node/accessor.js';
 export default class Storage {
-    constructor(accessor) {
-        this.catalog = new Catalog(accessor);
-    }
+	catalogPath = 'catalog';
 
-    async storeService(filename, object, objectRaw, objectMeta) {
-        const source = await this.catalog.create(filename, object);
-        const raw = await this.catalog.create(null, objectRaw);
-        const meta = await this.catalog.create(null, JSON.stringify(objectMeta, null, 2));
-        const store = await this.catalog.create(null, JSON.stringify({}, null, 2));
+	constructor(accessor) {
+		this.accessor = accessor;
+	}
 
-        const detail = JSON.stringify({
-            [storeFileIdentifier]: store.id,
-            [sourceFileIdentifier]: source.id,
-            [rawFileIdentifier]: raw.id,
-            [metaFileIdentifier]: meta.id
-        }, null, 2);
+	static buildNodeJS(instanceId) {
+		return new Storage(new AccessorNodeJs(instanceId));
+	}
 
-        const entry = await this.catalog.create(filename, detail);
+	static buildBrowser(instanceId) {
+		return new Storage(new AccessorBrowser(instanceId));
+	}
 
-        return entry.id;
-    }
+	async lookAt(id) {
+		const catalog = await this.load();
+		if (!catalog[id]) {
+			throw new Error('entry is not found');
+		}
+		return catalog[id];
+	}
 
-    async getService(id) {
-        const entry = await this.catalog.getJSON(id);
-        const source = await this.catalog.get(entry[sourceFileIdentifier]);        
-        const store = await this.catalog.getJSON(entry[storeFileIdentifier]);
-        const meta = await this.catalog.getJSONSafe(entry[metaFileIdentifier]);
-        return {
-            sourceId: entry[sourceFileIdentifier],
-            storeId: entry[storeFileIdentifier],
-            metaId: entry[metaFileIdentifier],
-            source: source,
-            store: store,
-            meta: meta
-        };
-    }
+	new(name) {
+		const id = uuid_v4();
+		return this.newWithId(id, name);
+	}
 
-    async updateService(id, object) {
-        const entry = await this.catalog.getJSON(id);
-        await this.catalog.update(entry[sourceFileIdentifier], object);
-    }
+	async newWithId(id, name) {
+		const entry = {
+			path: id,
+			id: id
+		};
 
-    update(id, object) {
-        return this.catalog.update(id, object);
-    }
+		if (name) {
+			entry.name = name;
+		}
 
-    read(id) {
-        return this.catalog.getJSON(id);
-    }
+		const db = await this.load();
+		if (db[id]) {
+			throw new Error('entry id is being used');
+		}
+		db[id] = entry;
 
-    createWithId(id, name, object) {
-        return this.catalog.createWithId(id, name, object);
-    }
+		await this.save(db);
+		return entry;
+	}
+
+	async create(name, object) {
+		const entry = await this.new(name);
+		await this.accessor.put(entry.path, object);
+		return entry;
+	}
+
+	async createWithId(id, name, object) {
+		const entry = await this.newWithId(id, name);
+		await this.accessor.put(entry.path, object);
+		return entry;
+	}
+
+	async update(id, object) {
+		const entry = await this.lookAt(id);
+		await this.accessor.put(entry.path, object);
+	}
+
+	get(id) {
+		return this.lookAt(id).then(file => this.accessor.fetch(file.path));
+	}
+
+	getJSON(id) {
+		return this.get(id).then(values => JSON.parse(values));
+	}
+
+	getJSONSafe(id) {
+		return this.getJSON(id).catch(_ => {});
+	}
+
+	load() {
+		return this.accessor.fetch(this.catalogPath).catch(_ => {}).then(values => values ? JSON.parse(values) : {});
+	}
+
+	save(object) {
+		return this.accessor.put(this.catalogPath, JSON.stringify(object, null, 2));
+	}
 }
