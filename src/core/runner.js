@@ -14,7 +14,7 @@ export default class Runner {
     async run(id, funcName, input) {
         const service = await this.manager.getService(id);
         this.keyValueStore = new KeyValueStore(service.store);
-        const res = this.runBasic(service.source, funcName, input, service.meta[funcName]);
+        const res = this.runBasic(service.source, funcName, input, service.meta ? service.meta[funcName] : {});
 
         this.manager.update(service.storeId, this.keyValueStore.export());
         return res;

@@ -1,13 +1,24 @@
 'use strict';
-import Storage from './storage.js';
 
 const _keyvalueStoreId = '_store';
 const _sourceId = '_source';
 const _rawId = '_raw';
 const _metaId = '_meta';
+
 export default class Manager {
-    constructor(storage) {
+    constructor(instanceId, storage, connector, compiler) {
+        this.instanceId = instanceId;
         this.storage = storage;
+        this.connector = connector;
+        this.compiler = compiler;
+
+        this.db = {};
+    }
+
+    async uploadAS(filename, object) {
+        const service = await this.compiler.AS(object.toString());
+        const id = await this.storeService(filename, service.source, service.raw, service.meta);
+        return id;
     }
 
     async storeService(filename, object, objectRaw, objectMeta) {
@@ -23,14 +34,33 @@ export default class Manager {
             [_metaId]: meta.id
         }, null, 2);
 
-        const entry = await this.storage.create(filename, detail);
+        let entry = null;
+        if (this.connector) {
+            const fileAdded = await this.connector.node.add({
+                path: filename,
+                content: detail
+            }, {
+                wrapWithDirectory: true,
+                // progress: updateProgress
+            })
+            const a = fileAdded.cid.toString();
+
+            await this.connector.getFile(this.connector.info.id.toString(), a);
+            entry = await this.storage.createWithId(a, filename, detail);
+        } else {
+            entry = await this.storage.create(filename, detail);
+        }
 
         return entry.id;
     }
 
+    getAvailableServices() {
+        return this.connector.getAvailableServices();
+    }
+
     async getService(id) {
         const entry = await this.storage.getJSON(id);
-        const source = await this.storage.get(entry[_sourceId]);        
+        const source = await this.storage.get(entry[_sourceId]);
         const store = await this.storage.getJSON(entry[_keyvalueStoreId]);
         const meta = await this.storage.getJSONSafe(entry[_metaId]);
         return {

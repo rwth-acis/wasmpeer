@@ -8,13 +8,14 @@ import Compiler from '../src/utils/compiler.js';
 import Manager from '../src/core/manager.js';
 
 describe('COMPONENTS', () => { 
-    describe('Manager', () => {
+    describe('Manager', async () => {
         const instanceId = uuidv4();
         const storage = Storage.buildNodeJS(instanceId);
-        const manager = new Manager(storage);
 
-        const path1 = './static/wasm/main.wasm';
-        const path2 = './static/wasm/helloworld.wasm';
+        const manager = new Manager(instanceId, storage, null, Compiler);
+
+        const path1 = './static/wasm/calculator.wasm';
+        const path2 = './static/wasm/string.wasm';
         const objMain = fs.readFileSync(path1);
         let id = '';
         describe('#create', () => {
@@ -47,7 +48,7 @@ describe('SERVICES', () => {
     let id = '';
     const instanceId = uuidv4();
     const storage = Storage.buildNodeJS(instanceId);
-    const manager = new Manager(storage);
+    const manager = new Manager(instanceId, storage, null, Compiler);
 
     describe('Calculator service', async () => {
         let service = null;
