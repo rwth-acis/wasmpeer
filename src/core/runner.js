@@ -2,9 +2,9 @@
 import KeyValueStore from './keyvalue-store.js';
 import loader from "@assemblyscript/loader";
 export default class Runner {
-    constructor(manager, connector) {
+    constructor(manager, communicator) {
         this.manager = manager;
-        this.connector = connector;
+        this.communicator = communicator;
         this.keyValueStore = {
             get: () => { },
             set: () => { }

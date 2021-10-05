@@ -6,10 +6,10 @@ const _rawId = '_raw';
 const _metaId = '_meta';
 
 export default class Manager {
-    constructor(instanceId, storage, connector, compiler) {
+    constructor(instanceId, storage, communicator, compiler) {
         this.instanceId = instanceId;
         this.storage = storage;
-        this.connector = connector;
+        this.communicator = communicator;
         this.compiler = compiler;
 
         this.db = {};
@@ -35,18 +35,17 @@ export default class Manager {
         }, null, 2);
 
         let entry = null;
-        if (this.connector) {
-            const fileAdded = await this.connector.node.add({
+        if (this.communicator) {
+            const fileAdded = await this.communicator.node.add({
                 path: filename,
                 content: detail
             }, {
-                wrapWithDirectory: true,
-                // progress: updateProgress
+                wrapWithDirectory: true
             })
-            const a = fileAdded.cid.toString();
+            const key = fileAdded.cid.toString();
 
-            await this.connector.getFile(this.connector.info.id.toString(), a);
-            entry = await this.storage.createWithId(a, filename, detail);
+            await this.communicator.getFile(this.communicator.info.id.toString(), key);
+            entry = await this.storage.createWithId(key, filename, detail);
         } else {
             entry = await this.storage.create(filename, detail);
         }

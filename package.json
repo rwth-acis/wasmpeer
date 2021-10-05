@@ -41,15 +41,19 @@
     "@wasmer/wasm-transformer": "^0.12.0",
     "@wasmer/wasmfs": "^0.12.0",
     "express": "^4.17.1",
+    "ipfs": "^0.58.6",
+    "it-all": "^1.0.4",
     "it-pipe": "^1.1.0",
     "libp2p": "^0.32.4",
     "libp2p-bootstrap": "^0.13.0",
+    "libp2p-kad-dht": "^0.25.0",
     "libp2p-mplex": "^0.10.4",
     "libp2p-webrtc-star": "^0.23.0",
     "libp2p-websockets": "^0.16.1",
     "localforage": "^1.9.0",
     "node-fetch": "^2.6.1",
     "peer-id": "0.14.0",
+    "uint8arrays": "^3.0.0",
     "uuid": "^8.3.2",
     "wrtc": "^0.4.7"
   },
@@ -62,7 +66,6 @@
     "babel-polyfill": "^6.26.0",
     "mocha": "8.3.0",
     "npm-watch": "^0.11.0",
-    "parcel-bundler": "^1.12.5",
-    "parcel-plugin-static-files-copy": "^2.6.0"
+    "parcel": "latest"
   }
 }
