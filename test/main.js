@@ -135,4 +135,56 @@ describe('SERVICES', () => {
             });
         });
     });
+
+    describe('Issue service', async () => {
+        let service = null;
+        const path1 = './static/as/issue.ts';
+        it('Compile the assembly script', async () => {
+            const mainRaw = fs.readFileSync(path1);            
+            service = await Compiler.AS(mainRaw.toString());
+            assert.ok(service);
+        });
+
+        it('Compiled module has generated correct descriptor', async () => {
+            assert.deepEqual(service.meta, {
+                add: { name: 'add', paramsType: { input: 'usize' }, returnType: 'usize' },
+                list: { name: 'list', paramsType: { }, returnType: 'usize' },
+            });
+        });
+
+        it('Store the service to storage', async () => {
+            const filename = path1.replace(/^.*[\\\/]/, '')
+            id = await manager.storeService(filename, service.source, service.raw, service.meta);
+            assert.ok(id);
+        });
+
+        describe('Execute the service', () => {
+            const executor = new Executor(manager);
+            const input1 = {
+                title: 'Assemblyscript can\'t support JSON',
+                description: 'Apparently JSON is not available natively in Assemblyscript'
+            };
+            const input2 = {
+                title: 'Assemblyscript can\'t support Overloading',
+                description: 'Apparently it is not available'
+            };
+            it('Add the first issue', async () => { 
+                await executor.run(id, 'add', input1);
+            });
+
+            it('Add the second issue', async () => { 
+                await executor.run(id, 'add', input2);
+            });
+
+            it('Get back the list of issues and previous input should exist in the list', async () => { 
+                const res = await executor.run(id, 'list', null);
+
+                const resInput1 = res.find(x => x.title === input1.title && x.description === input1.description);
+                assert.ok(resInput1);
+
+                const resInput2 = res.find(x => x.title === input2.title && x.description === input2.description);
+                assert.ok(resInput2);
+            });
+        });
+    });
 });
