@@ -1,14 +1,40 @@
 import asc from "assemblyscript/cli/asc";
-
+import fs from "fs";
+import os from 'os';
+import { v4 as uuidv4 } from 'uuid';
 export default class Compiler {
 	static async AS(sourceStr) {
 		await asc.ready;
-		const { binary, stdout } = asc.compileString(sourceStr, { exportRuntime: true, tsdFile: '' });
-		const functions = extractor(stdout.toString());
+
+		const dir = os.tmpdir() + '/wasmpeer/' + uuidv4() + '/';
+
+		fs.mkdirSync(dir, { recursive: true });
+		fs.writeFileSync(dir + 'input.ts', sourceStr);
+
+		asc.main([
+			dir + 'input.ts',
+			"--binaryFile", dir + 'binary',
+			"--tsdFile", dir + 'tsd',
+			"--exportRuntime"
+		], {
+			stdout: process.stdout,
+			stderr: process.stderr
+		}, err => {
+			if (err) {
+				throw err;
+			}
+		});
+
+		const binary = fs.readFileSync(dir + 'binary');
+		const tsd = fs.readFileSync(dir + 'tsd').toString();
+
+		fs.rmdirSync(dir, { recursive: true })
+
+		const meta = extractor(tsd);
 		const res = {
 			source: binary,
 			raw: sourceStr,
-			meta: functions
+			meta: meta
 		};
 		return res;
 	}
@@ -35,7 +61,9 @@ const getParams = (str) => {
 	const params = {};
 	rawParams.split(', ').forEach(x => {
 		const a = x.split(': ');
-		params[a[0]] = a[1];
+		if (a[0]) {
+			params[a[0]] = a[1];
+		}
 	});
 
 	const returnType = cleanStr.slice(paramEndIndex + 3, cleanStr.length - 1);
