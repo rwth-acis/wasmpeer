@@ -61,11 +61,11 @@ describe('SERVICES', () => {
 
         it('Compiled module has generated correct descriptor', async () => {
             assert.deepEqual(service.meta, {
-                add: { name: 'add', paramsType: { x: 'i32', y: 'i32'}, returnType: 'i32' },
-                subtract: { name: 'subtract', paramsType: { x: 'i32', y: 'i32'}, returnType: 'i32' },
-                multiple: { name: 'multiple', paramsType: { x: 'i32', y: 'i32'}, returnType: 'i32' },
-                divide: { name: 'divide', paramsType: { x: 'i32', y: 'i32'}, returnType: 'i32' },
-                fib: { name: 'fib', paramsType: { n: 'i32' }, returnType: 'i32' }
+                add: { name: 'add', paramsType: { input: 'usize' }, returnType: 'i32' },
+                subtract: { name: 'subtract', paramsType: { input: 'usize' }, returnType: 'i32' },
+                multiple: { name: 'multiple', paramsType: { input: 'usize' }, returnType: 'i32' },
+                divide: { name: 'divide', paramsType: { input: 'usize' }, returnType: 'i32' },
+                fib: { name: 'fib', paramsType: { input: 'usize'  }, returnType: 'i32' }
             });
         });
 
@@ -116,7 +116,7 @@ describe('SERVICES', () => {
 
         it('Compiled module has generated correct descriptor', async () => {
             assert.deepEqual(service.meta, {
-                concat: { name: 'concat', paramsType: { a: 'usize', b: 'usize'}, returnType: 'usize' }
+                concat: { name: 'concat', paramsType: { input: 'usize' }, returnType: 'usize' }
             });
         });
 
@@ -130,7 +130,7 @@ describe('SERVICES', () => {
         describe('Execute the service', () => {
             const executor = new Executor(manager);
             it('Concat "hello " and "world" returns "hello world"', async () => {
-                const res = await executor.run(id, 'concat', { a: 'hello ', b: 'world' });
+                const res = await executor.run(id, 'concat', { first: 'hello ', second: 'world' });
                 assert.strictEqual(res, 'hello world');
             });
         });
