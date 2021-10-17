@@ -14,8 +14,8 @@ describe('COMPONENTS', () => {
 
         const manager = new Manager(instanceId, storage, null, Compiler);
 
-        const path1 = './static/wasm/calculator.wasm';
-        const path2 = './static/wasm/string.wasm';
+        const path1 = './static/services/calculator/calculator.wasm';
+        const path2 = './static/services/string/string.wasm';
         const objMain = fs.readFileSync(path1);
         let id = '';
         describe('#create', () => {
@@ -52,7 +52,7 @@ describe('SERVICES', () => {
 
     describe('Calculator service', async () => {
         let service = null;
-        const path1 = './static/as/calculator.ts';
+        const path1 = './static/services/calculator/calculator.ts';
         it('Compile the assembly script', async () => {
             const mainRaw = fs.readFileSync(path1);
             service = await Compiler.AS(mainRaw.toString());
@@ -107,7 +107,7 @@ describe('SERVICES', () => {
 
     describe('String service', async () => {
         let service = null;
-        const path1 = './static/as/string.ts';
+        const path1 = './static/services/string/string.ts';
         it('Compile the assembly script', async () => {
             const mainRaw = fs.readFileSync(path1);
             service = await Compiler.AS(mainRaw.toString());
@@ -138,7 +138,7 @@ describe('SERVICES', () => {
 
     describe('Issue service', async () => {
         let service = null;
-        const path1 = './static/as/issue.ts';
+        const path1 = './static/services/issue/issue.ts';
         it('Compile the assembly script', async () => {
             const mainRaw = fs.readFileSync(path1);            
             service = await Compiler.AS(mainRaw.toString());

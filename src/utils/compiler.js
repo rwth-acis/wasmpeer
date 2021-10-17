@@ -6,15 +6,15 @@ export default class Compiler {
 	static async AS(sourceStr) {
 		await asc.ready;
 
-		const dir = os.tmpdir() + '/wasmpeer/' + uuidv4() + '/';
+		const dir = os.tmpdir() + '/wasmpeer/compiler/' + uuidv4() + '/';
 
 		fs.mkdirSync(dir, { recursive: true });
-		fs.writeFileSync(dir + 'input.ts', sourceStr);
+		fs.writeFileSync(dir + 'main.ts', sourceStr);
 
 		asc.main([
-			dir + 'input.ts',
-			"--binaryFile", dir + 'binary',
-			"--tsdFile", dir + 'tsd',
+			dir + 'main.ts',
+			"--binaryFile", dir + 'main.wasm',
+			"--tsdFile", dir + 'main.d.ts',
 			"--exportRuntime"
 		], {
 			stdout: process.stdout,
@@ -25,8 +25,8 @@ export default class Compiler {
 			}
 		});
 
-		const binary = fs.readFileSync(dir + 'binary');
-		const tsd = fs.readFileSync(dir + 'tsd').toString();
+		const binary = fs.readFileSync(dir + 'main.wasm');
+		const tsd = fs.readFileSync(dir + 'main.d.ts').toString();
 
 		fs.rmdirSync(dir, { recursive: true })
 

@@ -28,7 +28,7 @@ export default class Runner {
 				abort() { },
 				seed() { }
 			},
-			input: {
+			main: {
 				kvstore_get: (rawKey) => {
 					const key = __exports.__getString(rawKey);
 					const value = this.keyValueStore.get(key);
@@ -47,14 +47,14 @@ export default class Runner {
 			}
 		}
 
-		const mod = loader.instantiateSync(new Uint8Array(source), importObject);
+		const mod = await loader.instantiate(new Uint8Array(source), importObject);
 		__exports = mod.exports;
 
 		const func = mod.exports[funcName];
 		const parsedInput = JSON.stringify(input);
 		const res = func(__exports.__newString(parsedInput));
 
-		return this.resMapper(__exports, res, meta[funcName].returnType);
+		return this.resMapper(__exports, res, meta && meta[funcName] ? meta[funcName].returnType : 'usize');
 	}
 
 	// TODO: #3 simple mapper for now, more advance mapping technique like descriptor file is planned
@@ -72,7 +72,14 @@ export default class Runner {
 	resMapper(__exports, input, type) {
 		switch (type) {
 			case 'usize':
-				const response = __exports.__getString(input)
+				let response = null;
+				try {
+					response = __exports.__getString(input)
+				}
+				catch(err) {
+					return input;
+				}
+				
 				try {
 					const JSONparser = (str) => {
 						const raw = JSON.parse(str);
