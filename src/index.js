@@ -2,13 +2,10 @@ import Communicator from './core/communicator.js';
 import Storage from './core/storage';
 import Executor from './core/executor.js';
 import Manager from './core/manager.js';
-
+import Connector from './core/connector.js';
 import { v4 as uuidv4 } from 'uuid';
 
-import wasmString from 'url:../static/wasm/string.wasm';
-import wasmCalculator from 'url:../static/wasm/calculator.wasm';
-
-
+const __defaultWorkspace = 'wasmpeer';
 export default class Wasmpeer {
 	constructor(instanceId, manager, storage, communicator, executor) {
 		this.instanceId = instanceId;
@@ -16,46 +13,30 @@ export default class Wasmpeer {
 		this.communicator = communicator;
 		this.executor = executor;
 		this.manager = manager;
-		this.communicator.invoker = this.listen.bind(this);
+		this.communicator.execute = this.invoke.bind(this);
 	}
 
-	static async build(instanceId, StorageBuilder, CommunicatorBuilder, config) {
-		if (!instanceId) {
-			instanceId = uuidv4();
-		}
+	static async build(StorageBuilder, connector, config) {
+		const instanceId = await connector.ipfs.id();
 
-		const storage = StorageBuilder();
-		let bootstrapper = await storage.getJSON(instanceId).catch(async _ => {
-			await storage.createWithId(instanceId, 'bootstrapper', JSON.stringify({}));
-		});
-		let peerId = bootstrapper && bootstrapper.peerId && bootstrapper.peerId.id ? bootstrapper.peerId : null;
+		const storage = StorageBuilder(instanceId);
+		const manager = new Manager(storage, connector);
+		const communicator = new Communicator(connector, manager);
+		const executor = new Executor(manager, communicator);
 
-		const connector = await CommunicatorBuilder(peerId, config);
-		if (!peerId) {
-			if (!bootstrapper) {
-				bootstrapper= {};
-			}
-			bootstrapper.peerId = connector.node.id();
-			// await storage.update(instanceId, JSON.stringify(bootstrapper));
-		}
-
-		const manager = new Manager(instanceId, storage, connector);
-		const executor = new Executor(manager, connector);
-
-		await Wasmpeer.bootstrap(manager);
-		return new Wasmpeer(instanceId, manager, storage, connector, executor);
+		return new Wasmpeer(instanceId, manager, storage, communicator, executor);
 	}
 
-	static buildBrowser(instanceId, config) {
-		return Wasmpeer.build(instanceId, Storage.buildBrowser, Communicator.build, config);
+	static async buildBrowser(config) {
+		const connector = new Connector(__defaultWorkspace);
+		await connector.build();
+		return Wasmpeer.build(Storage.buildBrowser, connector, config);
 	}
 
-	static buildNodeJS(instanceId, config) {
-		return Wasmpeer.build(instanceId, Storage.buildNodeJS, Communicator.buildNodeJs, config);
-	}
-
-	invoke(targetPeerId, method, parameter) {
-		return this.connector.call(targetPeerId, method, parameter);
+	static async buildNodeJS(config) {
+		const connector = new Connector(__defaultWorkspace);
+		await connector.buildNodeJs();
+		return Wasmpeer.build(Storage.buildNodeJS, connector, config);
 	}
 
 	async listen(url) {
@@ -68,32 +49,18 @@ export default class Wasmpeer {
 			params = JSON.parse('{"' + decodeURI(search).replace(/"/g, '\\"').replace(/&/g, '","').replace(/=/g, '":"') + '"}');
 		}
 
-		const res = await this.execute(serviceId, endpoint, params);
+		const res = await this.invoke(serviceId, endpoint, params);
 		return res;
 	}
 
-	async execute(serviceId, endpoint, params) {
-
+	async invoke(serviceId, endpoint, params) {
+		console.log('invoking', serviceId, endpoint, params);
 		const res = await this.executor.run(serviceId, endpoint, params);
 		return res;
 	}
 
-	async callOther(serviceId, endpoint, params) {
-		const res = await this.connector.callFirst();
+	async invokeOn(targetPeerId, serviceId, endpoint, params) {
+		const res = await this.communicator.request(targetPeerId, serviceId, endpoint, params);
 		return res;
-	}
-
-	static async bootstrap(manager) {
-		const path1 = wasmString;
-		const filename = path1.replace(/^.*[\\\/]/, '')
-		const objCalc = await fetch(path1).then(resp => resp.arrayBuffer());
-		const idCalc = await manager.storeService(filename, objCalc);
-
-		const path2 = wasmCalculator;
-		const filename2 = path2.replace(/^.*[\\\/]/, '')
-		const objStr = await fetch(path2).then(resp => resp.arrayBuffer());
-		const idStr = await manager.storeService(filename2, objStr);
-
-		return [idCalc, idStr];
 	}
 }

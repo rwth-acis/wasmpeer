@@ -6,13 +6,20 @@ const _rawId = '_raw';
 const _metaId = '_meta';
 
 export default class Manager {
-    constructor(instanceId, storage, communicator, compiler) {
-        this.instanceId = instanceId;
+    constructor(storage, connector, compiler) {
         this.storage = storage;
-        this.communicator = communicator;
         this.compiler = compiler;
-
+        this.FILES = [];
+		this.FILESHash = {};
         this.db = {};
+
+        if (connector) {
+            this.connector = connector;
+            this.outgoingBroadcast();
+
+            this.incomingBroadcast = this.incomingBroadcast.bind(this);
+            this.connector.startSubscribe(this.incomingBroadcast);            
+        }
     }
 
     async uploadAS(filename, object) {
@@ -31,20 +38,21 @@ export default class Manager {
             [_keyvalueStoreId]: store.id,
             [_sourceId]: source.id,
             [_rawId]: raw.id,
-            [_metaId]: meta.id
+            [_metaId]: meta.id,
+            meta: objectMeta
         }, null, 2);
 
         let entry = null;
-        if (this.communicator) {
-            const fileAdded = await this.communicator.node.add({
+        if (this.connector) {
+            const fileAdded = await this.connector.ipfs.add({
                 path: filename,
                 content: detail
             }, {
                 wrapWithDirectory: true
             })
             const key = fileAdded.cid.toString();
+            this.createEntry(key, filename, detail);
 
-            await this.communicator.getFile(this.communicator.info.id.toString(), key);
             entry = await this.storage.createWithId(key, filename, detail);
         } else {
             entry = await this.storage.create(filename, detail);
@@ -53,9 +61,18 @@ export default class Manager {
         return entry.id;
     }
 
-    getAvailableServices() {
-        return this.connector.getAvailableServices();
+    createEntry(hash, name, size, content) {
+        this.FILES.push(hash);
+        this.FILESHash[hash] = {
+            hash: hash,
+            name: name,
+            content: content
+        }
     }
+
+    getAvailableServices() {
+		return this.FILES.map(x => this.FILESHash[x]);
+	}	
 
     async getService(id) {
         const entry = await this.storage.getJSON(id);
@@ -78,6 +95,7 @@ export default class Manager {
     }
 
     update(id, object) {
+        // console.log('update: ', id, object);
         return this.storage.update(id, object);
     }
 
@@ -88,4 +106,28 @@ export default class Manager {
     createWithId(id, name, object) {
         return this.storage.createWithId(id, name, object);
     }
+
+    // #region broadcaster
+    async incomingBroadcast(message) {
+		const myId = this.connector.info.id.toString();
+		const hash = message.data.toString();
+		const senderId = message.from;
+        
+		if (myId !== senderId && !this.FILES.includes(hash)) {
+			const entry = await this.connector.getFile(hash);
+            this.createEntry(hash, entry.name, entry.content);
+		}
+	}
+
+    outgoingBroadcast() {
+        setInterval(async () => {
+            try {
+                await Promise.all(this.FILES.map(this.connector.publishHash)); 
+            } catch (err) {
+                err.message = `Failed to publish the file list: ${err.message}`;
+                throw new Error(err.message);
+            }
+        }, 10000);    
+	}
+    // #endregion
 }

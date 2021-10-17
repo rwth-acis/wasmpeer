@@ -12,7 +12,7 @@ describe('COMPONENTS', () => {
         const instanceId = uuidv4();
         const storage = Storage.buildNodeJS(instanceId);
 
-        const manager = new Manager(instanceId, storage, null, Compiler);
+        const manager = new Manager(storage, null, Compiler);
 
         const path1 = './static/services/calculator/calculator.wasm';
         const path2 = './static/services/string/string.wasm';
@@ -48,7 +48,7 @@ describe('SERVICES', () => {
     let id = '';
     const instanceId = uuidv4();
     const storage = Storage.buildNodeJS(instanceId);
-    const manager = new Manager(instanceId, storage, null, Compiler);
+    const manager = new Manager(storage, null, Compiler);
 
     describe('Calculator service', async () => {
         let service = null;
