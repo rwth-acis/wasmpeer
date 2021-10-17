@@ -8,13 +8,14 @@ import Compiler from '../src/utils/compiler.js';
 import Manager from '../src/core/manager.js';
 
 describe('COMPONENTS', () => { 
-    describe('Manager', () => {
+    describe('Manager', async () => {
         const instanceId = uuidv4();
         const storage = Storage.buildNodeJS(instanceId);
-        const manager = new Manager(storage);
 
-        const path1 = './static/wasm/main.wasm';
-        const path2 = './static/wasm/helloworld.wasm';
+        const manager = new Manager(storage, null, Compiler);
+
+        const path1 = './static/services/calculator/calculator.wasm';
+        const path2 = './static/services/string/string.wasm';
         const objMain = fs.readFileSync(path1);
         let id = '';
         describe('#create', () => {
@@ -47,11 +48,11 @@ describe('SERVICES', () => {
     let id = '';
     const instanceId = uuidv4();
     const storage = Storage.buildNodeJS(instanceId);
-    const manager = new Manager(storage);
+    const manager = new Manager(storage, null, Compiler);
 
     describe('Calculator service', async () => {
         let service = null;
-        const path1 = './static/as/calculator.ts';
+        const path1 = './static/services/calculator/calculator.ts';
         it('Compile the assembly script', async () => {
             const mainRaw = fs.readFileSync(path1);
             service = await Compiler.AS(mainRaw.toString());
@@ -60,11 +61,11 @@ describe('SERVICES', () => {
 
         it('Compiled module has generated correct descriptor', async () => {
             assert.deepEqual(service.meta, {
-                add: { name: 'add', paramsType: { x: 'i32', y: 'i32'}, returnType: 'i32' },
-                subtract: { name: 'subtract', paramsType: { x: 'i32', y: 'i32'}, returnType: 'i32' },
-                multiple: { name: 'multiple', paramsType: { x: 'i32', y: 'i32'}, returnType: 'i32' },
-                divide: { name: 'divide', paramsType: { x: 'i32', y: 'i32'}, returnType: 'i32' },
-                fib: { name: 'fib', paramsType: { n: 'i32' }, returnType: 'i32' }
+                add: { name: 'add', paramsType: { input: 'usize' }, returnType: 'i32' },
+                subtract: { name: 'subtract', paramsType: { input: 'usize' }, returnType: 'i32' },
+                multiple: { name: 'multiple', paramsType: { input: 'usize' }, returnType: 'i32' },
+                divide: { name: 'divide', paramsType: { input: 'usize' }, returnType: 'i32' },
+                fib: { name: 'fib', paramsType: { input: 'usize'  }, returnType: 'i32' }
             });
         });
 
@@ -106,7 +107,7 @@ describe('SERVICES', () => {
 
     describe('String service', async () => {
         let service = null;
-        const path1 = './static/as/string.ts';
+        const path1 = './static/services/string/string.ts';
         it('Compile the assembly script', async () => {
             const mainRaw = fs.readFileSync(path1);
             service = await Compiler.AS(mainRaw.toString());
@@ -115,7 +116,7 @@ describe('SERVICES', () => {
 
         it('Compiled module has generated correct descriptor', async () => {
             assert.deepEqual(service.meta, {
-                concat: { name: 'concat', paramsType: { a: 'usize', b: 'usize'}, returnType: 'usize' }
+                concat: { name: 'concat', paramsType: { input: 'usize' }, returnType: 'usize' }
             });
         });
 
@@ -129,8 +130,60 @@ describe('SERVICES', () => {
         describe('Execute the service', () => {
             const executor = new Executor(manager);
             it('Concat "hello " and "world" returns "hello world"', async () => {
-                const res = await executor.run(id, 'concat', { a: 'hello ', b: 'world' });
+                const res = await executor.run(id, 'concat', { first: 'hello ', second: 'world' });
                 assert.strictEqual(res, 'hello world');
+            });
+        });
+    });
+
+    describe('Issue service', async () => {
+        let service = null;
+        const path1 = './static/services/issue/issue.ts';
+        it('Compile the assembly script', async () => {
+            const mainRaw = fs.readFileSync(path1);            
+            service = await Compiler.AS(mainRaw.toString());
+            assert.ok(service);
+        });
+
+        it('Compiled module has generated correct descriptor', async () => {
+            assert.deepEqual(service.meta, {
+                add: { name: 'add', paramsType: { input: 'usize' }, returnType: 'usize' },
+                list: { name: 'list', paramsType: { }, returnType: 'usize' },
+            });
+        });
+
+        it('Store the service to storage', async () => {
+            const filename = path1.replace(/^.*[\\\/]/, '')
+            id = await manager.storeService(filename, service.source, service.raw, service.meta);
+            assert.ok(id);
+        });
+
+        describe('Execute the service', () => {
+            const executor = new Executor(manager);
+            const input1 = {
+                title: 'Assemblyscript can\'t support JSON',
+                description: 'Apparently JSON is not available natively in Assemblyscript'
+            };
+            const input2 = {
+                title: 'Assemblyscript can\'t support Overloading',
+                description: 'Apparently it is not available'
+            };
+            it('Add the first issue', async () => { 
+                await executor.run(id, 'add', input1);
+            });
+
+            it('Add the second issue', async () => { 
+                await executor.run(id, 'add', input2);
+            });
+
+            it('Get back the list of issues and previous input should exist in the list', async () => { 
+                const res = await executor.run(id, 'list', null);
+
+                const resInput1 = res.find(x => x.title === input1.title && x.description === input1.description);
+                assert.ok(resInput1);
+
+                const resInput2 = res.find(x => x.title === input2.title && x.description === input2.description);
+                assert.ok(resInput2);
             });
         });
     });

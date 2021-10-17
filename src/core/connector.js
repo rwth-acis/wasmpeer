@@ -1,225 +1,187 @@
 import Libp2p from 'libp2p';
-import WebRTCStar from 'libp2p-webrtc-star';
-import Websockets from 'libp2p-websockets';
-import Mplex from 'libp2p-mplex';
 import Bootstrap from 'libp2p-bootstrap';
+import KadDHT from 'libp2p-kad-dht';
+import Gossipsub from 'libp2p-gossipsub';
+import MPLEX from 'libp2p-mplex';
 import { NOISE } from '@chainsafe/libp2p-noise';
+import WebRTCStar from 'libp2p-webrtc-star';
 import wrtc from 'wrtc';
-import pipe from 'it-pipe';
-import PeerId from 'peer-id';
-import { v4 as uuidv4 } from 'uuid';
+import IPFS from 'ipfs';
+
+import all from 'it-all';
+import { concat as uint8ArrayConcat } from 'uint8arrays/concat';
+import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 
 export default class Connector {
-	constructor(node, log) {
-		this.node = node;
-		this.log = log;
-		this.callStack = {};
-		this.invoker = () => { };
-
-		node.handle(node.peerId.toB58String(), async ({ connection, stream }) => {
-			try {
-				await pipe(
-					stream,
-					async (source) => {
-						for await (const message of source) {
-							const req = JSON.parse(String(message));
-
-							if (req.type === 'ANS') {
-								if (!this.callStack[req.callId]) {
-									throw new Error('Incoming not recognized: ', req.callId);
-								}
-								this.callStack[req.callId](req);
-								this.callStack[req.callId] = null;
-							} else {
-								// UI.log('INCOMING REQ: ', req.callId);
-								const resp = await this.invoker('https://wasmpeer.org/e21af0b5-2a5c-4e93-9ee2-d3449fcf23e3/main?i=10');
-
-								const payload = {
-									type: 'ANS',
-									req: req,
-									callId: req.callId,
-									data: resp
-								};
-
-								try {
-									const { stream } = await connection.newStream([connection.remotePeer.toB58String()])
-									await Invocator.send(JSON.stringify(payload), stream);
-									return;
-								} catch (err) {
-									console.error('Could not negotiate chat protocol stream with peer', err)
-								}
-							}
-						}
-					}
-				)
-
-				await pipe([], stream)
-			} catch (err) {
-				console.error(err)
-			}
-		});
+	constructor(workspace) {
+		this.workspace = workspace;
+		this.libp2p = null;
+		this.ipfs = null;
+		this.info = null;
+		this.builder = this.builder.bind(this);
+		this.FILES = [];
+		this.FILESHash = {};
 	}
 
-	static buildNodeJs(peerId, params = {}) {
-		params.transport = {
+	async build() {
+		const ipfs = await IPFS.create({
+			libp2p: this.builder
+		});
+		this.ipfs = ipfs;
+		this.info = await ipfs.id();
+	}
+
+	async buildNodeJs(opts) {
+		opts.transport = {
 			[WebRTCStar.prototype[Symbol.toStringTag]]: {
 				wrtc
 			}
-		}
-		return Connector.build(peerId, params);
+		};
+		return this.build(opts);
 	}
 
-	static async build(peerId, params = {}) {
-		let { transport, log, sigServers, bootstrappers } = params;
+	async getFile(hash) {
+		if (!hash) {
+			throw new Error('No CID was inserted.');
+		}
 
-		transport = transport || {};
-		log = log || (() => { });
-		peerId = peerId ? (await PeerId.createFromJSON(peerId)) : await PeerId.create();
+		for await (const file of this.ipfs.ls(hash)) {
+			if (file.type === 'file') {
+				const content = uint8ArrayConcat(await all(this.ipfs.cat(file.cid)));
+				return {
+					name: file.name,
+					hash: hash,
+					size: file.size,
+					content: content
+				};
+			}
+		}
+	}
+
+	startSubscribe = (handler) => {
+		try {
+			this.ipfs.pubsub.subscribe(this.workspace, handler);
+		} catch (err) {
+			err.message = `Failed to subscribe to the workspace: ${err.message}`;
+			throw new Error(err.message);
+		}		
+	}
+
+	publishHash = (hash) => {
+		const data = uint8ArrayFromString(hash);
+		return this.ipfs.pubsub.publish(this.workspace, data);
+	}
+
+	async getConnection(targetPeerId) {
+		let foundTargetPeerData = null;
+		this.libp2p.peerStore.peers.forEach(peerData => {
+			const peerId = peerData.id.toB58String();
+			if (targetPeerId === peerId) {
+				foundTargetPeerData = peerData;
+				return;
+			}
+		})
+		let connection = this.libp2p.connectionManager.get(foundTargetPeerData.id);
+		// reattempt connection
+		if (!connection) {
+			connection = await this.libp2p.dial(foundTargetPeerData.id);
+		}
+		return connection;
+	}
+
+	async builder(opts) {
+		const peerId = opts.peerId
+		const bootstrapList = [
+			'/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN',
+			'/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb',
+			'/dnsaddr/bootstrap.libp2p.io/p2p/QmZa1sAxajnQjVM8WjWXoMbmPd7NsWhfKsPkErzpm9wGkp',
+			'/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa',
+			'/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt'
+		];
+		const transport = opts.transport || {};
 
 		const node = await Libp2p.create({
-			peerId: peerId,
+			peerId,
 			addresses: {
-				listen: sigServers
+				listen: [
+					'/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star',
+					'/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star'
+				]
+			},
+			connectionManager: {
+				minPeers: 25,
+				maxPeers: 100,
+				pollInterval: 5000
 			},
 			modules: {
-				transport: [Websockets, WebRTCStar],
-				streamMuxer: [Mplex],
-				connEncryption: [NOISE],
-				peerDiscovery: [Bootstrap]
+				transport: [
+					WebRTCStar
+				],
+				streamMuxer: [
+					MPLEX
+				],
+				connEncryption: [
+					NOISE
+				],
+				peerDiscovery: [
+					Bootstrap
+				],
+				dht: KadDHT,
+				pubsub: Gossipsub
 			},
 			config: {
+
+				transport: transport,
 				peerDiscovery: {
-					autoDial: false,
-					[Bootstrap.tag]: {
+					autoDial: true,
+					mdns: {
+						interval: 10000,
+						enabled: true
+					},
+					bootstrap: {
+						interval: 30e3,
 						enabled: true,
-						list: bootstrappers
+						list: bootstrapList
 					}
 				},
-				transport: transport
+				relay: {
+					enabled: true,
+					hop: {
+						enabled: true,
+						active: true
+					}
+				},
+				dht: {
+					enabled: true,
+					kBucketSize: 20,
+					randomWalk: {
+						enabled: true,
+						interval: 10e3,
+						timeout: 2e3
+					}
+				},
+				pubsub: {
+					enabled: true
+				}
 			},
+			metrics: {
+				enabled: true,
+				computeThrottleMaxQueueSize: 1000,
+				computeThrottleTimeout: 2000,
+				movingAverageIntervals: [
+					60 * 1000,
+					5 * 60 * 1000,
+					15 * 60 * 1000
+				],
+				maxOldPeersRetention: 50
+			}
 		});
 
-		node.connectionManager.on('peer:connect', (connection) => {
-			log(`Connected to ${connection.remotePeer.toB58String()}!`)
-		});
-
-		node.connectionManager.on('peer:disconnect', (connection) => {
-			log(`Disconnected from '${connection.remotePeer.toB58String()}`)
-		});
-
-		// node.on('peer:discovery', (peerId) => {
-		//   log(`Found peer ${peerId.toB58String()}`)
-		// })
-
-		await node.start();
-		log('peerId: ' + node.peerId.toB58String());
-
-		return new Connector(node, log);
+		this.libp2p = node;
+		return node;
 	}
 
-	async sendMessage(targetPeerId, message) {
-
-		this.node.peerStore.peers.forEach(async peerData => {
-			const peerId = peerData.id.toB58String();
-			if (targetPeerId !== peerId) return;
-
-			let connection = this.node.connectionManager.get(peerData.id)
-			if (!connection) {
-				connection = await this.node.dial(peerData.id);
-			}
-
-			if (!connection) return;
-
-			try {
-				const { stream } = await connection.newStream([peerId])
-				await Invocator.send(message, stream);
-			} catch (err) {
-				console.error('Could not negotiate chat protocol stream with peer', err)
-			}
-		})
-	}
-
-	async invoke(targetPeerId, payload) {
-		this.node.peerStore.peers.forEach(async peerData => {
-			const peerId = peerData.id.toB58String();
-			if (targetPeerId !== peerId) return;
-
-			let connection = this.node.connectionManager.get(peerData.id)
-			if (!connection) {
-				connection = await this.node.dial(peerData.id);
-			}
-			if (!connection) return;
-
-			try {
-				const { stream } = await connection.newStream([peerId])
-				await Invocator.send(JSON.stringify(payload), stream);
-				return;
-			} catch (err) {
-				console.error('Could not negotiate chat protocol stream with peer', err)
-			}
-		})
-	}
-
-	async call(targetPeerId, method, parameter) {
-		const payload = {
-			callId: uuidv4(),
-			method: method,
-			type: 'GET',
-			serviceId: 'abcdef',
-			parameter: parameter
-		};
-
-		const ress = new Promise((resolve, reject) => {
-			this.invoke(targetPeerId, payload);
-			this.callStack[payload.callId] = resolve;
-		});
-
-		const resp = await ress.then(x => {
-			return x.data;
-		});
-
-		return resp;
-	}
-
-	// callFirst() {
-	//   const list = this.peer.fingerTable.getTable();
-	//   const a = Object.values(list)[0];
-
-	//   return this.call(a.fingerId, null);
-	// }
-}
-
-const Invocator = {
-	handler: async ({ connection, stream }) => {
-		try {
-			await pipe(
-				stream,
-				async function (source) {
-					for await (const message of source) {
-
-						console.info(`${connection.remotePeer.toB58String().slice(0, 8)}: ${String(message)}`)
-					}
-				}
-			)
-
-			await pipe([], stream)
-		} catch (err) {
-			console.error(err)
-		}
-	},
-	send: async (message, stream) => {
-		try {
-			await pipe(
-				[message],
-				stream,
-				async (source) => {
-					for await (const message of source) {
-						console.info(String(message))
-					}
-				}
-			)
-		} catch (err) {
-			console.error(err)
-		}
+	getAvailablePeers() {
+		return this.ipfs.pubsub.peers(this.workspace);
 	}
 }

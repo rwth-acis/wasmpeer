@@ -1,52 +1,42 @@
-import Connector from './core/connector.js';
-import Storage from './core/storage.js';
+import Communicator from './core/communicator.js';
+import Storage from './core/storage';
 import Executor from './core/executor.js';
 import Manager from './core/manager.js';
-
+import Connector from './core/connector.js';
 import { v4 as uuidv4 } from 'uuid';
 
+const __defaultWorkspace = 'wasmpeer';
 export default class Wasmpeer {
-	constructor(instanceId, manager, storage, connector, executor) {
+	constructor(instanceId, manager, storage, communicator, executor) {
 		this.instanceId = instanceId;
 		this.storage = storage;
-		this.connector = connector;
+		this.communicator = communicator;
 		this.executor = executor;
 		this.manager = manager;
-		this.connector.invoker = this.listen.bind(this);
+		this.communicator.execute = this.invoke.bind(this);
 	}
 
-	static async build(instanceId, StorageBuilder, ConnectorBuilder, config) {
-		if (!instanceId) {
-			instanceId = uuidv4();
-		}
+	static async build(StorageBuilder, connector, config) {
+		const instanceId = await connector.ipfs.id();
 
-		const storage = new StorageBuilder();
-		let peerId = await storage.getJSON(instanceId).catch(async _ => {
-			await storage.createWithId(instanceId, 'bootstrapper', JSON.stringify({}));
-		});
-		peerId = peerId && peerId.id ? peerId : null;
+		const storage = StorageBuilder(instanceId);
+		const manager = new Manager(storage, connector);
+		const communicator = new Communicator(connector, manager);
+		const executor = new Executor(manager, communicator);
 
-		const connector = await ConnectorBuilder(peerId, config);
-		if (!peerId) {
-			await storage.update(instanceId, JSON.stringify(connector.node.peerId.toJSON()));
-		}
-
-		const manager = new Manager(storage);
-		const executor = new Executor(manager, connector);
-
-		return new Wasmpeer(instanceId, manager, storage, connector, executor);
+		return new Wasmpeer(instanceId, manager, storage, communicator, executor);
 	}
 
-	static buildBrowser(instanceId, config) {
-		return Wasmpeer.build(instanceId, Storage.buildBrowser, Connector.build, config);
+	static async buildBrowser(config) {
+		const connector = new Connector(__defaultWorkspace);
+		await connector.build();
+		return Wasmpeer.build(Storage.buildBrowser, connector, config);
 	}
 
-	static buildNodeJS(instanceId, config) {
-		return Wasmpeer.build(instanceId, Storage.buildNodeJS, Connector.buildNodeJs, config);
-	}
-
-	invoke(targetPeerId, method, parameter) {
-		return this.connector.call(targetPeerId, method, parameter);
+	static async buildNodeJS(config) {
+		const connector = new Connector(__defaultWorkspace);
+		await connector.buildNodeJs();
+		return Wasmpeer.build(Storage.buildNodeJS, connector, config);
 	}
 
 	async listen(url) {
@@ -59,32 +49,18 @@ export default class Wasmpeer {
 			params = JSON.parse('{"' + decodeURI(search).replace(/"/g, '\\"').replace(/&/g, '","').replace(/=/g, '":"') + '"}');
 		}
 
-		// REMARK: for testing purpose due to unavailability of upload mechanism
-		serviceId = await this.setupForTest();
-		const res = await this.execute(serviceId, endpoint, params);
+		const res = await this.invoke(serviceId, endpoint, params);
 		return res;
 	}
 
-	async execute(serviceId, endpoint, params) {
-
+	async invoke(serviceId, endpoint, params) {
+		console.log('invoking', serviceId, endpoint, params);
 		const res = await this.executor.run(serviceId, endpoint, params);
 		return res;
 	}
 
-	async callOther(serviceId, endpoint, params) {
-		const res = await this.connector.callFirst();
+	async invokeOn(targetPeerId, serviceId, endpoint, params) {
+		const res = await this.communicator.request(targetPeerId, serviceId, endpoint, params);
 		return res;
-	}
-
-	async bootstrap() {
-
-		const path1 = '/as/calculator.ts';
-
-		const objFibo = await fetch(path1).then(resp => resp.arrayBuffer());
-
-		const filename = path1.replace(/^.*[\\\/]/, '')
-		const id = await this.storage.storeService(filename, objFibo);
-
-		return id;
 	}
 }
