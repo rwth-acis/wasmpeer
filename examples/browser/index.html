@@ -2,18 +2,52 @@
 <html lang="en">
 
 <head>
-	<meta charset="utf-8">
-	<title>wasmpeer</title>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>wasmpeer</title>
+    <link rel="stylesheet" href="index.css" />
+    <script type="module" src="index.js" defer></script>
 </head>
 
-<body>
-	<header>
-		<h1 id="status">wasmpeer</h1>
-	</header>
-	<main>
-		<pre id="output"></pre>
-	</main>
-	<script src="index.js"></script>
+<body ondragover="event.preventDefault()">
+    <header>wasmpeer invoker</header>
+    <main>
+        <div class="box node">
+            <div>
+                <h3>id</h3>
+                <pre class="node-id"></pre>
+            </div>
+        </div>
+
+        <div class="columns">
+            <div id="peers" class="box disabled">
+                <h2>available peers</h2>
+                <table>
+                    <tbody id="workspace-peers"></tbody>
+                </table>
+            </div>
+
+            <div id="files" class="box disabled" ondragover="event.preventDefault()">
+                <h2>services</h2>
+                <table id="file-history">
+                    <thead>
+                        <tr>
+                            <th>PeerId</th>
+                            <th>Name</th>
+                            <th>CID</th>
+                            <th>Size</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="empty-row">
+                            <td colspan="4">There are no files in this workspace.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
 </body>
 
 </html>
