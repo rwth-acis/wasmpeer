@@ -8,6 +8,7 @@ import WebRTCStar from 'libp2p-webrtc-star';
 import wrtc from 'wrtc';
 import IPFS from 'ipfs';
 
+import pipe from 'it-pipe';
 import all from 'it-all';
 import { concat as uint8ArrayConcat } from 'uint8arrays/concat';
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
@@ -58,7 +59,7 @@ export default class Connector {
 		}
 	}
 
-	startSubscribe = (handler) => {
+	startSubscribe(handler) {
 		try {
 			this.ipfs.pubsub.subscribe(this.workspace, handler);
 		} catch (err) {
@@ -67,7 +68,7 @@ export default class Connector {
 		}		
 	}
 
-	publishHash = (hash) => {
+	publishHash(hash) {
 		const data = uint8ArrayFromString(hash);
 		return this.ipfs.pubsub.publish(this.workspace, data);
 	}
@@ -185,3 +186,36 @@ export default class Connector {
 		return this.ipfs.pubsub.peers(this.workspace);
 	}
 }
+
+// #region protocols
+export const ChannelProtocol = {
+	REQUEST: 'request',
+	RESPONSE: 'response',
+	flush: async (stream) => {
+		await pipe([], stream);
+	},
+	receive: async (stream) => {
+		await pipe(
+			stream,
+			async (source) => {
+				for await (const message of source) {
+					req = JSON.parse(String(message));
+					return req;
+				}
+			}
+		)
+	},
+	send: async (connection, channel, payload) => {
+		try {
+			const { stream } = await connection.newStream([channel]);
+			await pipe(
+				[JSON.stringify(payload)],
+				stream
+			);
+			return;
+		} catch (err) {
+			console.error('Could not negotiate chat protocol stream with peer', err);
+		}
+	}
+}
+// #endregion

@@ -1,5 +1,5 @@
-import pipe from 'it-pipe';
 import { v4 as uuidv4 } from 'uuid';
+import { ChannelProtocol } from './connector.js';
 export default class Communicator {
 	constructor(connector) {
 		this.connector = connector;
@@ -39,7 +39,6 @@ export default class Communicator {
 		return x.data;
 	}
 
-
 	async handleRequest({ connection, stream }) {
 		try {
 			const req = await ChannelProtocol.receive(stream);
@@ -59,7 +58,7 @@ export default class Communicator {
 		}
 	}
 
-	async handleResponse({ connection, stream }) {
+	async handleResponse({ stream }) {
 		try {
 			const req = await ChannelProtocol.receive(stream);
 
@@ -76,36 +75,3 @@ export default class Communicator {
 		}
 	}
 }
-
-// #region protocols
-const ChannelProtocol = {
-	REQUEST: 'request',
-	RESPONSE: 'response',
-	flush: async (stream) => {
-		await pipe([], stream);
-	},
-	receive: async (stream) => {
-		await pipe(
-			stream,
-			async (source) => {
-				for await (const message of source) {
-					req = JSON.parse(String(message));
-					return req;
-				}
-			}
-		)
-	},
-	send: async (connection, channel, payload) => {
-		try {
-			const { stream } = await connection.newStream([channel]);
-			await pipe(
-				[JSON.stringify(payload)],
-				stream
-			);
-			return;
-		} catch (err) {
-			console.error('Could not negotiate chat protocol stream with peer', err);
-		}
-	}
-}
-// #endregion
