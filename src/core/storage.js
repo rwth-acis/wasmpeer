@@ -2,10 +2,10 @@ import { v4 as uuid_v4 } from 'uuid';
 import AccessorBrowser from '../browser/accessor.js';
 import AccessorNodeJs from '../node/accessor.js';
 export default class Storage {
-	catalogPath = 'catalog';
 
 	constructor(accessor) {
 		this.accessor = accessor;
+		this.catalogPath = 'catalog';
 	}
 
 	static buildNodeJS(instanceId) {

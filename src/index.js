@@ -7,12 +7,13 @@ import { v4 as uuidv4 } from 'uuid';
 
 const __defaultWorkspace = 'wasmpeer';
 export default class Wasmpeer {
-	constructor(instanceId, manager, storage, communicator, executor) {
+	constructor(instanceId, manager, storage, communicator, executor, connector) {
 		this.instanceId = instanceId;
 		this.storage = storage;
 		this.communicator = communicator;
 		this.executor = executor;
 		this.manager = manager;
+		this.connector = connector;
 		this.communicator.execute = this.invoke.bind(this);
 	}
 
@@ -24,7 +25,7 @@ export default class Wasmpeer {
 		const communicator = new Communicator(connector, manager);
 		const executor = new Executor(manager, communicator);
 
-		return new Wasmpeer(instanceId, manager, storage, communicator, executor);
+		return new Wasmpeer(instanceId, manager, storage, communicator, executor, connector);
 	}
 
 	static async buildBrowser(config) {
