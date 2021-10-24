@@ -2,92 +2,57 @@
 import assert from 'assert';
 import Executor from '../src/core/executor.js';
 import fs from 'fs';
-import { v4 as uuidv4 } from 'uuid';
 import Compiler from '../src/utils/compiler.js';
 import Manager from '../src/core/manager.js';
 import Connector from '../src/core/connector.js';
-import { exit } from 'process';
-import IPFS from 'ipfs';
-import Mocha from 'mocha';
 
-
-
-// describe('COMPONENTS', function () {     
-//     describe('Manager', async function () {     
-
-
-
-        
-//         it('should allow for using a libp2p bundle', async () => {
-//             aaa = await IPFS.create({repo: 'daa', start: false});
-//             await aaa.start();
-//             await aaa.stop();
-//             // await delay(3000);
-//             assert.ok(2)
-//         });
-
-        
-            
-        
-        
-        
-//         // const connector = new Connector('wasmpeer');
-//         // await connector.buildNodeJs();
-//         // const manager = new Manager(connector, Compiler);
-
-//         const path1 = './static/services/calculator/calculator.wasm';
-//         // // const path2 = './static/services/string/string.wasm';
-//         // // const objMain = fs.readFileSync(path1);
-//         let id = 'dsadas';
-
-//         console.log('asa')
-//         describe('#create', () => {
-//             it('Function will create a new entry to the catalog and save the file', async () => {
-//                 const filename = path1.replace(/^.*[\\\/]/, '')
-//                 // id = await manager.storeService(filename, objMain, '', {});
-//                 assert.ok(id);
-//             });
-//         });
-//         // describe('#read', () => {
-//         //     it('Function will read the new entry from the catalog and the file should be the same', async () => {
-//         //         const { source } = await manager.getService(id);
-//         //         assert.deepStrictEqual(source, objMain);
-//         //     });
-//         // });
-//         // describe('#update', () => {
-//         //     it('Function will update the entry from the catalog and the file should be the updated', async () => {
-//         //         const objHello = fs.readFileSync(path2);
-//         //         manager.updateService(id, objHello);
-
-//         //         const { source } = await manager.getService(id);
-//         //         assert.deepStrictEqual(source, objHello);
-//         //         assert.notDeepStrictEqual(source, objMain);
-//         //     });
-//         // });
-
-//         // exit();
-//     });
-//     // this.afterAll(() => {
-//     //     exit();
-//     // })
-// });
-
-describe('SERVICES', () => {
+describe('WASMPEER', () => {
     let id = '';
-    const instanceId = uuidv4();
 
     let manager;
     let executor;
-    const connector = new Connector();
+    let connector;
     
-    it('Should setup connector', async () => {
+    it('INIT: Setup connector', async () => {
+        connector = new Connector();
         await connector.buildNodeJs();
         manager = new Manager(connector, Compiler);
         executor = new Executor(manager);
         assert.ok(connector);
     });
+
+    describe('COMPONENT: Manager', () => {    
+        const path1 = './static/services/calculator/calculator.wasm';
+        const path2 = './static/services/string/string.wasm';
+        
+        let objMain;
+        let id;
+
+        it('Function will create a new entry to the catalog and save the file', async () => {
+            objMain = fs.readFileSync(path1);
+            const filename = path1.replace(/^.*[\\\/]/, '')
+            id = await manager.storeService(filename, objMain, '', {});
+            assert.ok(id);
+        });
+
+        it('Function will read the new entry from the catalog and the file should be the same', async () => {
+            const service = await manager.getService(id);
+            objMain = fs.readFileSync(path1);
+            const objMainUint8Array = new Uint8Array(objMain);
+            assert.deepEqual(objMainUint8Array, service.source);
+        });
+
+        // it('Function will update the entry from the catalog and the file should be the updated', async () => {
+        //     const objHello = fs.readFileSync(path2);
+        //     // manager.updateService(id, objHello);
+
+        //     const { source } = await manager.getService(id);
+        //     assert.deepStrictEqual(source, objHello);
+        //     assert.notDeepStrictEqual(source, objMain);
+        // });
+    });
     
-    describe('Calculator service', async () => { 
+    describe('SERVICE: Calculator service', async () => { 
         let service = null;
         const path1 = './static/services/calculator/calculator.ts';
         it('Compile the assembly script', async () => {
@@ -138,7 +103,7 @@ describe('SERVICES', () => {
         });
     });
 
-    describe('String service', async () => {
+    describe('SERVICE: String service', async () => {
         let service = null;
         const path1 = './static/services/string/string.ts';
         it('Compile the assembly script', async () => {
@@ -165,7 +130,7 @@ describe('SERVICES', () => {
         });
     });
 
-    describe('Issue service', async () => {
+    describe('SERVICE: Issue service', async () => {
         let service = null;
         const path1 = './static/services/issue/issue.ts';
         const input1 = {
@@ -213,4 +178,12 @@ describe('SERVICES', () => {
             assert.ok(resInput2);
         });
     });
+
+    after(async () => {
+        if (connector) {
+            await connector.db.close();
+            await connector.ipfs.stop();
+            console.log('close ipfs');
+        }
+    })
 });

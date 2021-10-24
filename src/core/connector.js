@@ -30,8 +30,13 @@ export default class Connector {
 
 	async build() {
 		const ipfs = await IPFS.create({
-			libp2p: this.builder
+			libp2p: this.builder,
+			start: false
 		});
+		if (ipfs) {
+			await ipfs.stop();
+		}
+		await ipfs.start();
 		const orbitdb = await OrbitDB.createInstance(ipfs);
 		const db = await orbitdb.keyvalue('wasmpeer');
 		this.db = db;
