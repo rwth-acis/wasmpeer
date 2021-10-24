@@ -13,6 +13,8 @@ import all from 'it-all';
 import { concat as uint8ArrayConcat } from 'uint8arrays/concat';
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 
+import OrbitDB from 'orbit-db';
+
 export default class Connector {
 	constructor(workspace) {
 		this.workspace = workspace;
@@ -23,12 +25,16 @@ export default class Connector {
 		this.FILES = [];
 		this.FILESHash = {};
 		this.opts = {};
+		this.db = null;
 	}
 
 	async build() {
 		const ipfs = await IPFS.create({
 			libp2p: this.builder
 		});
+		const orbitdb = await OrbitDB.createInstance(ipfs);
+		const db = await orbitdb.keyvalue('wasmpeer');
+		this.db = db;
 		this.ipfs = ipfs;
 		this.info = await ipfs.id();
 	}
