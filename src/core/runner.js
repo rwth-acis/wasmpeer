@@ -13,10 +13,13 @@ export default class Runner {
 
 	async run(id, funcName, input) {
 		const service = await this.manager.getService(id);
-		this.keyValueStore = new KeyValueStore(service.store);
-		const res = await this.runBasic(service.source, funcName, input, service.meta);
+		const keyvalue = this.manager.connector.db.get(id) || {};
 
-		this.manager.update(service.storeId, this.keyValueStore.export());
+		this.keyValueStore = new KeyValueStore(keyvalue);
+		
+		const res = await this.runBasic(service.source, funcName, input, service.meta);
+		await this.manager.connector.db.put(id, keyvalue);
+		
 		return res;
 	}
 

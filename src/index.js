@@ -7,9 +7,8 @@ import { v4 as uuidv4 } from 'uuid';
 
 const __defaultWorkspace = 'wasmpeer';
 export default class Wasmpeer {
-	constructor(instanceId, manager, storage, communicator, executor, connector) {
+	constructor(instanceId, manager, communicator, executor, connector) {
 		this.instanceId = instanceId;
-		this.storage = storage;
 		this.communicator = communicator;
 		this.executor = executor;
 		this.manager = manager;
@@ -17,27 +16,26 @@ export default class Wasmpeer {
 		this.communicator.execute = this.invoke.bind(this);
 	}
 
-	static async build(StorageBuilder, connector, config) {
+	static async build(connector, config) {
 		const instanceId = await connector.ipfs.id();
 
-		const storage = StorageBuilder(instanceId);
-		const manager = new Manager(storage, connector);
+		const manager = new Manager(connector);
 		const communicator = new Communicator(connector, manager);
 		const executor = new Executor(manager, communicator);
 
-		return new Wasmpeer(instanceId, manager, storage, communicator, executor, connector);
+		return new Wasmpeer(instanceId, manager, communicator, executor, connector);
 	}
 
 	static async buildBrowser(config) {
 		const connector = new Connector(__defaultWorkspace);
 		await connector.build();
-		return Wasmpeer.build(Storage.buildBrowser, connector, config);
+		return Wasmpeer.build(connector, config);
 	}
 
 	static async buildNodeJS(config) {
 		const connector = new Connector(__defaultWorkspace);
 		await connector.buildNodeJs();
-		return Wasmpeer.build(Storage.buildNodeJS, connector, config);
+		return Wasmpeer.build(connector, config);
 	}
 
 	async listen(url) {
