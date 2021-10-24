@@ -1,56 +1,93 @@
 'use strict';
 import assert from 'assert';
 import Executor from '../src/core/executor.js';
-import Storage from '../src/core/storage.js';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import Compiler from '../src/utils/compiler.js';
 import Manager from '../src/core/manager.js';
+import Connector from '../src/core/connector.js';
+import { exit } from 'process';
+import IPFS from 'ipfs';
+import Mocha from 'mocha';
 
-describe('COMPONENTS', () => { 
-    describe('Manager', async () => {
-        const instanceId = uuidv4();
-        const storage = Storage.buildNodeJS(instanceId);
 
-        const manager = new Manager(storage, null, Compiler);
 
-        const path1 = './static/services/calculator/calculator.wasm';
-        const path2 = './static/services/string/string.wasm';
-        const objMain = fs.readFileSync(path1);
-        let id = '';
-        describe('#create', () => {
-            it('Function will create a new entry to the catalog and save the file', async () => {
-                const filename = path1.replace(/^.*[\\\/]/, '')
-                id = await manager.storeService(filename, objMain, '', {});
-                assert.ok(id);
-            });
-        });
-        describe('#read', () => {
-            it('Function will read the new entry from the catalog and the file should be the same', async () => {
-                const { source } = await manager.getService(id);
-                assert.deepStrictEqual(source, objMain);
-            });
-        });
-        describe('#update', () => {
-            it('Function will update the entry from the catalog and the file should be the updated', async () => {
-                const objHello = fs.readFileSync(path2);
-                manager.updateService(id, objHello);
+// describe('COMPONENTS', function () {     
+//     describe('Manager', async function () {     
 
-                const { source } = await manager.getService(id);
-                assert.deepStrictEqual(source, objHello);
-                assert.notDeepStrictEqual(source, objMain);
-            });
-        });
-    });
-});
+
+
+        
+//         it('should allow for using a libp2p bundle', async () => {
+//             aaa = await IPFS.create({repo: 'daa', start: false});
+//             await aaa.start();
+//             await aaa.stop();
+//             // await delay(3000);
+//             assert.ok(2)
+//         });
+
+        
+            
+        
+        
+        
+//         // const connector = new Connector('wasmpeer');
+//         // await connector.buildNodeJs();
+//         // const manager = new Manager(connector, Compiler);
+
+//         const path1 = './static/services/calculator/calculator.wasm';
+//         // // const path2 = './static/services/string/string.wasm';
+//         // // const objMain = fs.readFileSync(path1);
+//         let id = 'dsadas';
+
+//         console.log('asa')
+//         describe('#create', () => {
+//             it('Function will create a new entry to the catalog and save the file', async () => {
+//                 const filename = path1.replace(/^.*[\\\/]/, '')
+//                 // id = await manager.storeService(filename, objMain, '', {});
+//                 assert.ok(id);
+//             });
+//         });
+//         // describe('#read', () => {
+//         //     it('Function will read the new entry from the catalog and the file should be the same', async () => {
+//         //         const { source } = await manager.getService(id);
+//         //         assert.deepStrictEqual(source, objMain);
+//         //     });
+//         // });
+//         // describe('#update', () => {
+//         //     it('Function will update the entry from the catalog and the file should be the updated', async () => {
+//         //         const objHello = fs.readFileSync(path2);
+//         //         manager.updateService(id, objHello);
+
+//         //         const { source } = await manager.getService(id);
+//         //         assert.deepStrictEqual(source, objHello);
+//         //         assert.notDeepStrictEqual(source, objMain);
+//         //     });
+//         // });
+
+//         // exit();
+//     });
+//     // this.afterAll(() => {
+//     //     exit();
+//     // })
+// });
 
 describe('SERVICES', () => {
     let id = '';
     const instanceId = uuidv4();
-    const storage = Storage.buildNodeJS(instanceId);
-    const manager = new Manager(storage, null, Compiler);
 
-    describe('Calculator service', async () => {
+    let manager;
+    let executor;
+    const connector = new Connector();
+    
+    it('Should setup connector', async () => {
+        await connector.buildNodeJs();
+        manager = new Manager(connector, Compiler);
+        executor = new Executor(manager);
+        assert.ok(connector);
+    });
+    
+    describe('Calculator service', async () => { 
         let service = null;
         const path1 = './static/services/calculator/calculator.ts';
         it('Compile the assembly script', async () => {
@@ -75,33 +112,29 @@ describe('SERVICES', () => {
             assert.ok(id);
         });
 
-        describe('Execute the service', () => {
-            const executor = new Executor(manager);
+        it('Execute: Add 5 and 6 returns 11', async () => {
+            const res = await executor.run(id, 'add', { x: 5, y: 6 });
+            assert.strictEqual(res, 11);
+        });
 
-            it('Add 5 and 6 returns 11', async () => {
-                const res = await executor.run(id, 'add', { x: 5, y: 6 });
-                assert.strictEqual(res, 11);
-            });
-    
-            it('Subtract 5 and 6 returns -1', async () => {
-                const res = await executor.run(id, 'subtract', { x: 5, y: 6 });
-                assert.strictEqual(res, -1);
-            });
-    
-            it('Multiple 5 and 6 returns 30', async () => {
-                const res = await executor.run(id, 'multiple', { x: 5, y: 6 });
-                assert.strictEqual(res, 30);
-            });
-    
-            it('Divide 30 and 6 returns 5', async () => {
-                const res = await executor.run(id, 'divide', { x: 30, y: 6 });
-                assert.strictEqual(res, 5);
-            });
-    
-            it('Fibonacci of 5 returns 8', async () => {
-                const res = await executor.run(id, 'fib', { x: 5 });
-                assert.strictEqual(res, 8);
-            });
+        it('Execute: Subtract 5 and 6 returns -1', async () => {
+            const res = await executor.run(id, 'subtract', { x: 5, y: 6 });
+            assert.strictEqual(res, -1);
+        });
+
+        it('Execute: Multiple 5 and 6 returns 30', async () => {
+            const res = await executor.run(id, 'multiple', { x: 5, y: 6 });
+            assert.strictEqual(res, 30);
+        });
+
+        it('Execute: Divide 30 and 6 returns 5', async () => {
+            const res = await executor.run(id, 'divide', { x: 30, y: 6 });
+            assert.strictEqual(res, 5);
+        });
+
+        it('Execute: Fibonacci of 5 returns 8', async () => {
+            const res = await executor.run(id, 'fib', { x: 5 });
+            assert.strictEqual(res, 8);
         });
     });
 
@@ -126,19 +159,23 @@ describe('SERVICES', () => {
             assert.ok(id);
         });
 
-        
-        describe('Execute the service', () => {
-            const executor = new Executor(manager);
-            it('Concat "hello " and "world" returns "hello world"', async () => {
-                const res = await executor.run(id, 'concat', { first: 'hello ', second: 'world' });
-                assert.strictEqual(res, 'hello world');
-            });
+        it('Execute: Concat "hello " and "world" returns "hello world"', async () => {
+            const res = await executor.run(id, 'concat', { first: 'hello ', second: 'world' });
+            assert.strictEqual(res, 'hello world');
         });
     });
 
     describe('Issue service', async () => {
         let service = null;
         const path1 = './static/services/issue/issue.ts';
+        const input1 = {
+            title: 'Assemblyscript can\'t support JSON',
+            description: 'Apparently JSON is not available natively in Assemblyscript'
+        };
+        const input2 = {
+            title: 'Assemblyscript can\'t support Overloading',
+            description: 'Apparently it is not available'
+        };
         it('Compile the assembly script', async () => {
             const mainRaw = fs.readFileSync(path1);            
             service = await Compiler.AS(mainRaw.toString());
@@ -158,33 +195,22 @@ describe('SERVICES', () => {
             assert.ok(id);
         });
 
-        describe('Execute the service', () => {
-            const executor = new Executor(manager);
-            const input1 = {
-                title: 'Assemblyscript can\'t support JSON',
-                description: 'Apparently JSON is not available natively in Assemblyscript'
-            };
-            const input2 = {
-                title: 'Assemblyscript can\'t support Overloading',
-                description: 'Apparently it is not available'
-            };
-            it('Add the first issue', async () => { 
-                await executor.run(id, 'add', input1);
-            });
+        it('Execute: Add the first issue', async () => { 
+            await executor.run(id, 'add', input1);
+        });
 
-            it('Add the second issue', async () => { 
-                await executor.run(id, 'add', input2);
-            });
+        it('Execute: Add the second issue', async () => { 
+            await executor.run(id, 'add', input2);
+        });
 
-            it('Get back the list of issues and previous input should exist in the list', async () => { 
-                const res = await executor.run(id, 'list', null);
+        it('Execute: Get back the list of issues and previous input should exist in the list', async () => { 
+            const res = await executor.run(id, 'list', null);
 
-                const resInput1 = res.find(x => x.title === input1.title && x.description === input1.description);
-                assert.ok(resInput1);
+            const resInput1 = res.find(x => x.title === input1.title && x.description === input1.description);
+            assert.ok(resInput1);
 
-                const resInput2 = res.find(x => x.title === input2.title && x.description === input2.description);
-                assert.ok(resInput2);
-            });
+            const resInput2 = res.find(x => x.title === input2.title && x.description === input2.description);
+            assert.ok(resInput2);
         });
     });
 });

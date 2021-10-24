@@ -7,7 +7,7 @@
   },
   "type": "module",
   "scripts": {
-    "test": "mocha test/main.js --timeout 10000",
+    "test": "mocha test/main.js --timeout 10000 --exit",
     "build": "parcel build examples/browser/index.html",
     "serve": "npm run build & node server.js",
     "start:node": "node examples/node/index.js",
