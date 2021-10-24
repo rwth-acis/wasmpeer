@@ -22,6 +22,7 @@ export default class Connector {
 		this.builder = this.builder.bind(this);
 		this.FILES = [];
 		this.FILESHash = {};
+		this.opts = {};
 	}
 
 	async build() {
@@ -32,13 +33,13 @@ export default class Connector {
 		this.info = await ipfs.id();
 	}
 
-	async buildNodeJs(opts) {
-		opts.transport = {
+	async buildNodeJs() {
+		this.opts.transport = {
 			[WebRTCStar.prototype[Symbol.toStringTag]]: {
 				wrtc
 			}
 		};
-		return this.build(opts);
+		return this.build();
 	}
 
 	async getFile(hash) {
@@ -90,7 +91,8 @@ export default class Connector {
 		return connection;
 	}
 
-	async builder(opts) {
+	async builder() {
+		const opts = this.opts;
 		const peerId = opts.peerId
 		const bootstrapList = [
 			'/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN',

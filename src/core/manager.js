@@ -1,13 +1,14 @@
 'use strict';
 
-const _keyvalueStoreId = '_store';
 const _sourceId = '_source';
-const _rawId = '_raw';
 const _metaId = '_meta';
+const _nameId = '_name';
+
+import all from 'it-all';
+import { concat as uint8ArrayConcat } from 'uint8arrays/concat';
 
 export default class Manager {
-    constructor(storage, connector, compiler) {
-        this.storage = storage;
+    constructor(connector, compiler) {
         this.compiler = compiler;
         this.FILES = [];
 		this.FILESHash = {};
@@ -29,36 +30,29 @@ export default class Manager {
     }
 
     async storeService(filename, object, objectRaw, objectMeta) {
-        const source = await this.storage.create(filename, object);
-        const raw = await this.storage.create(null, objectRaw);
-        const meta = await this.storage.create(null, JSON.stringify(objectMeta, null, 2));
-        const store = await this.storage.create(null, JSON.stringify({}, null, 2));
+        const service = await this.connector.ipfs.add({
+            path: filename,
+            content: object
+        });
 
-        const detail = JSON.stringify({
-            [_keyvalueStoreId]: store.id,
-            [_sourceId]: source.id,
-            [_rawId]: raw.id,
-            [_metaId]: meta.id,
-            meta: objectMeta
-        }, null, 2);
+        objectMeta[_nameId] = filename;
+        objectMeta[_sourceId] = service.cid.toString();
 
-        let entry = null;
-        if (this.connector) {
-            const fileAdded = await this.connector.ipfs.add({
-                path: filename,
-                content: detail
-            }, {
-                wrapWithDirectory: true
-            })
-            const key = fileAdded.cid.toString();
-            this.createEntry(key, filename, detail);
+        const metaObject = new TextEncoder().encode(JSON.stringify(objectMeta, null, 2));
+        const wrap = await this.connector.ipfs.add({
+            path: filename + _metaId,
+            content: metaObject
+        });
 
-            entry = await this.storage.createWithId(key, filename, detail);
-        } else {
-            entry = await this.storage.create(filename, detail);
-        }
+        const cid = wrap.cid.toString();
+        this.createEntry(cid, filename, 1, metaObject);
 
-        return entry.id;
+        await this.connector.ipfs.files.write('/catalog.json', new TextEncoder().encode(JSON.stringify(this.FILES)), {
+            create: true,
+            parents: true
+        });
+
+        return cid;
     }
 
     createEntry(hash, name, size, content) {
@@ -75,16 +69,11 @@ export default class Manager {
 	}	
 
     async getService(id) {
-        const entry = await this.storage.getJSON(id);
-        const source = await this.storage.get(entry[_sourceId]);
-        const store = await this.storage.getJSON(entry[_keyvalueStoreId]);
-        const meta = await this.storage.getJSONSafe(entry[_metaId]);
+        const content = uint8ArrayConcat(await all(this.connector.ipfs.cat(id)));
+        const meta = JSON.parse((new TextDecoder()).decode(content));
+        const source = uint8ArrayConcat(await all(this.connector.ipfs.cat(meta[_sourceId])));
         return {
-            sourceId: entry[_sourceId],
-            storeId: entry[_keyvalueStoreId],
-            metaId: entry[_metaId],
             source: source,
-            store: store,
             meta: meta
         };
     }
