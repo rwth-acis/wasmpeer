@@ -1,41 +1,30 @@
 import Communicator from './core/communicator.js';
-import Storage from './core/storage';
 import Executor from './core/executor.js';
 import Manager from './core/manager.js';
 import Connector from './core/connector.js';
-import { v4 as uuidv4 } from 'uuid';
 
-const __defaultWorkspace = 'wasmpeer';
 export default class Wasmpeer {
-	constructor(instanceId, manager, communicator, executor, connector) {
-		this.instanceId = instanceId;
-		this.communicator = communicator;
-		this.executor = executor;
-		this.manager = manager;
+	constructor(connector) {
+		this.instanceId = connector.id;
+
+		this.manager = new Manager(connector);
+		this.communicator = new Communicator(connector, this.manager);
+		this.executor = new Executor(this.manager, this.communicator);
+
 		this.connector = connector;
 		this.communicator.execute = this.invoke.bind(this);
 	}
 
-	static async build(connector, config) {
-		const instanceId = await connector.ipfs.id();
-
-		const manager = new Manager(connector);
-		const communicator = new Communicator(connector, manager);
-		const executor = new Executor(manager, communicator);
-
-		return new Wasmpeer(instanceId, manager, communicator, executor, connector);
-	}
-
-	static async buildBrowser(config) {
-		const connector = new Connector(__defaultWorkspace);
+	static async buildBrowser(options = {}) {
+		const connector = new Connector(options);
 		await connector.build();
-		return Wasmpeer.build(connector, config);
+		return new Wasmpeer(connector, options);
 	}
 
-	static async buildNodeJS(config) {
-		const connector = new Connector(__defaultWorkspace);
+	static async buildNodeJS(options) {
+		const connector = new Connector(options);
 		await connector.buildNodeJs();
-		return Wasmpeer.build(connector, config);
+		return new Wasmpeer(connector, options);
 	}
 
 	async listen(url) {

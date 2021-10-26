@@ -15,13 +15,23 @@ import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 
 import OrbitDB from 'orbit-db';
 
+const __defaultWorkspace = 'wasmpeer';
+
 export default class Connector {
-	constructor(workspace) {
-		this.workspace = workspace;
+	constructor(options = {}) {
+
+		this.workspace = options.workspaceName || __defaultWorkspace;
+		this.repoName = options.repoName || null;
+
 		this.libp2p = null;
 		this.ipfs = null;
 		this.info = null;
 		this.builder = this.builder.bind(this);
+		this.publishHash = this.publishHash.bind(this);
+
+		this.getFile = this.getFile.bind(this);
+		this.getFileInJSON = this.getFileInJSON.bind(this);
+
 		this.FILES = [];
 		this.FILESHash = {};
 		this.opts = {};
@@ -31,17 +41,20 @@ export default class Connector {
 	async build() {
 		const ipfs = await IPFS.create({
 			libp2p: this.builder,
-			start: false
+			start: false,
+			repo: this.repoName
 		});
 		if (ipfs) {
 			await ipfs.stop();
 		}
 		await ipfs.start();
 		const orbitdb = await OrbitDB.createInstance(ipfs);
-		const db = await orbitdb.keyvalue('wasmpeer');
+		const db = await orbitdb.keyvalue(this.workspace);
 		this.db = db;
 		this.ipfs = ipfs;
 		this.info = await ipfs.id();
+
+		this.id = this.libp2p.peerId.toB58String();
 	}
 
 	async buildNodeJs() {
@@ -53,22 +66,22 @@ export default class Connector {
 		return this.build();
 	}
 
-	async getFile(hash) {
-		if (!hash) {
-			throw new Error('No CID was inserted.');
+	async getFile(id) {
+		if (!id) {
+			throw new Error('No CID');
 		}
+		for await (const file of this.ipfs.ls(id)) {
+				if (file.type === 'file') {
+					return uint8ArrayConcat(await all(this.ipfs.cat(file.cid)));
+				}
+		}
+		throw new Error('File not exist');
+	}
 
-		for await (const file of this.ipfs.ls(hash)) {
-			if (file.type === 'file') {
-				const content = uint8ArrayConcat(await all(this.ipfs.cat(file.cid)));
-				return {
-					name: file.name,
-					hash: hash,
-					size: file.size,
-					content: content
-				};
-			}
-		}
+	async getFileInJSON(id) {
+		const raw = await this.getFile(id);
+		const rawStr = (new TextDecoder()).decode(raw);
+		return JSON.parse(rawStr);
 	}
 
 	startSubscribe(handler) {

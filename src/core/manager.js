@@ -6,27 +6,57 @@ const _nameId = '_name';
 
 import all from 'it-all';
 import { concat as uint8ArrayConcat } from 'uint8arrays/concat';
+import { extractor } from '../utils/parser.js';
 
 export default class Manager {
     constructor(connector, compiler) {
         this.compiler = compiler;
-        this.FILES = [];
-		this.FILESHash = {};
+        this.activeServices = [];
+        this.ownServices = [];
+		this.lookup = {};
         this.db = {};
+        this.connector = connector;
 
-        if (connector) {
-            this.connector = connector;
-            this.outgoingBroadcast();
+        try {
+            // init repo
+            (async () => {
+                const exists = await this.connector.ipfs.files.stat('/catalog.json').catch(_ => null);
+                if (!exists) {
+                    return;
+                }
+                
+                const catalogRaw = await all(this.connector.ipfs.files.read('/catalog.json'));
+                this.ownServices = JSON.parse((new TextDecoder()).decode(uint8ArrayConcat(catalogRaw))|| '[]');
 
-            this.incomingBroadcast = this.incomingBroadcast.bind(this);
-            this.connector.startSubscribe(this.incomingBroadcast);            
+                this.ownServices.forEach(async hash => {
+                    const meta = await this.connector.getFileInJSON(hash);
+                    this.activeServices.push(hash);
+                    this.lookup[hash] = {
+                        hash: hash,
+                        name: meta[_nameId]
+                    }
+                })
+            })();
         }
+        catch(err) {
+            console.error('instantiate catalog error', error)
+        }
+
+        this.outgoingBroadcast();
+
+        this.incomingBroadcast = this.incomingBroadcast.bind(this);
+        this.connector.startSubscribe(this.incomingBroadcast); 
     }
 
     async uploadAS(filename, object) {
         const service = await this.compiler.AS(object.toString());
         const id = await this.storeService(filename, service.source, service.raw, service.meta);
         return id;
+    }
+
+    async storeServiceTsd(filename, object, objectRaw, objectTsd) {
+        const meta = extractor(objectTsd);
+        return this.storeService(filename, object, objectRaw, meta);
     }
 
     async storeService(filename, object, objectRaw, objectMeta) {
@@ -45,73 +75,63 @@ export default class Manager {
         });
 
         const cid = wrap.cid.toString();
-        this.createEntry(cid, filename, 1, metaObject);
 
-        await this.connector.ipfs.files.write('/catalog.json', new TextEncoder().encode(JSON.stringify(this.FILES)), {
-            create: true,
-            parents: true
-        });
+        this.createEntry(cid, filename, 1, metaObject);
 
         return cid;
     }
 
-    createEntry(hash, name, size, content) {
-        this.FILES.push(hash);
-        this.FILESHash[hash] = {
+    async createEntry(hash, name, size, content) {
+        if (this.ownServices.includes(hash)) {
+            throw new Error('service exist');
+        }
+        this.activeServices.push(hash);
+        this.ownServices.push(hash);
+        this.lookup[hash] = {
             hash: hash,
             name: name,
             content: content
         }
+
+        await this.connector.ipfs.files.write('/catalog.json', new TextEncoder().encode(JSON.stringify(this.ownServices)), {
+            create: true,
+            parents: true
+        });
     }
 
     getAvailableServices() {
-		return this.FILES.map(x => this.FILESHash[x]);
+		return this.activeServices.map(x => this.lookup[x]);
 	}	
 
     async getService(id) {
-        const content = uint8ArrayConcat(await all(this.connector.ipfs.cat(id)));
+        const content = await this.connector.getFile(id);
         const meta = JSON.parse((new TextDecoder()).decode(content));
-        const source = uint8ArrayConcat(await all(this.connector.ipfs.cat(meta[_sourceId])));
+        const source = await this.connector.getFile(meta[_sourceId]);
         return {
             source: source,
             meta: meta
         };
     }
 
-    async updateService(id, object) {
-        const entry = await this.storage.getJSON(id);
-        await this.storage.update(entry[_sourceId], object);
-    }
-
-    update(id, object) {
-        // console.log('update: ', id, object);
-        return this.storage.update(id, object);
-    }
-
-    read(id) {
-        return this.storage.getJSON(id);
-    }
-
-    createWithId(id, name, object) {
-        return this.storage.createWithId(id, name, object);
-    }
-
     // #region broadcaster
     async incomingBroadcast(message) {
-		const myId = this.connector.info.id.toString();
+		const myId = this.connector.id;
 		const hash = message.data.toString();
 		const senderId = message.from;
-        
-		if (myId !== senderId && !this.FILES.includes(hash)) {
-			const entry = await this.connector.getFile(hash);
-            this.createEntry(hash, entry.name, entry.content);
+		if (myId !== senderId && !this.activeServices.includes(hash)) {
+            const meta = await this.connector.getFileInJSON(hash);
+            this.activeServices.push(hash);
+            this.lookup[hash] = {
+                hash: hash,
+                name: meta[_nameId]
+            }
 		}
 	}
 
     outgoingBroadcast() {
         setInterval(async () => {
             try {
-                await Promise.all(this.FILES.map(this.connector.publishHash)); 
+                await Promise.all(this.ownServices.map(this.connector.publishHash)); 
             } catch (err) {
                 err.message = `Failed to publish the file list: ${err.message}`;
                 throw new Error(err.message);
