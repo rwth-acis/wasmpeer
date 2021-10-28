@@ -1,13 +1,13 @@
 // source: https://gist.github.com/aolde/8104861
 // simple http server for temporary testing
 
-var http = require("http"),
-	url = require("url"),
-	path = require("path"),
-	fs = require("fs");
+import http from "http";
+import url from "url";
+import path from "path";
+import fs from "fs";
 	
-port = process.argv[2] || 8888,
-	mimeTypes = {
+var port = process.argv[2] || 8888;
+var mimeTypes = {
 		"html": "text/html",
 		"jpeg": "image/jpeg",
 		"jpg": "image/jpeg",
@@ -20,8 +20,8 @@ port = process.argv[2] || 8888,
 
 http.createServer(function (request, response) {
 
-	var uri = url.parse(request.url).pathname,
-		filename = path.join(process.cwd() + '/dist/', uri);
+	var uri = url.parse(request.url).pathname
+	var filename = path.join(process.cwd() + '/dist/', uri);
 
 	fs.exists(filename, function (exists) {
 		if (!exists) {

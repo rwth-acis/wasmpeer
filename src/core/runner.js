@@ -13,7 +13,10 @@ export default class Runner {
 
 	async run(id, funcName, input) {
 		const service = await this.manager.getService(id);
+		console.log(service);
 		const keyvalue = this.manager.connector.db.get(id) || {};
+
+		
 
 		this.keyValueStore = new KeyValueStore(keyvalue);
 		
@@ -50,7 +53,7 @@ export default class Runner {
 			}
 		}
 
-		const mod = await loader.instantiate(new Uint8Array(source), importObject);
+		const mod = await loader.instantiate(source, importObject);
 		__exports = mod.exports;
 
 		const func = mod.exports[funcName];
@@ -74,6 +77,7 @@ export default class Runner {
 
 	resMapper(__exports, input, type) {
 		switch (type) {
+			case 'usize;':
 			case 'usize':
 				let response = null;
 				try {

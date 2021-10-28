@@ -9,8 +9,8 @@ import { concat as uint8ArrayConcat } from 'uint8arrays/concat';
 import { extractor } from '../utils/parser.js';
 
 export default class Manager {
-    constructor(connector, compiler) {
-        this.compiler = compiler;
+    constructor(connector, options = {}) {
+        this.compiler = options.compiler || null;
         this.activeServices = [];
         this.ownServices = [];
 		this.lookup = {};
@@ -42,10 +42,10 @@ export default class Manager {
             console.error('instantiate catalog error', error)
         }
 
-        this.outgoingBroadcast();
-
         this.incomingBroadcast = this.incomingBroadcast.bind(this);
         this.connector.startSubscribe(this.incomingBroadcast); 
+
+        this.outgoingBroadcast();
     }
 
     async uploadAS(filename, object) {

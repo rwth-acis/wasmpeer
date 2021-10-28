@@ -51,6 +51,10 @@ export default class Connector {
 		const orbitdb = await OrbitDB.createInstance(ipfs);
 		const db = await orbitdb.keyvalue(this.workspace);
 		this.db = db;
+
+		db.events.on('replicated', address => {
+			console.log('dada', address);
+		})
 		this.ipfs = ipfs;
 		this.info = await ipfs.id();
 
@@ -86,6 +90,7 @@ export default class Connector {
 
 	startSubscribe(handler) {
 		try {
+			console.log('about to ', this.workspace);
 			this.ipfs.pubsub.subscribe(this.workspace, handler);
 		} catch (err) {
 			err.message = `Failed to subscribe to the workspace: ${err.message}`;

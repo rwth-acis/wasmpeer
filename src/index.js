@@ -4,10 +4,10 @@ import Manager from './core/manager.js';
 import Connector from './core/connector.js';
 
 export default class Wasmpeer {
-	constructor(connector) {
+	constructor(connector, options) {
 		this.instanceId = connector.id;
 
-		this.manager = new Manager(connector);
+		this.manager = new Manager(connector, options);
 		this.communicator = new Communicator(connector, this.manager);
 		this.executor = new Executor(this.manager, this.communicator);
 

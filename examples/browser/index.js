@@ -58,19 +58,94 @@ const getParameter = (parameterName) => {
 	return result;
 }
 
+const $dragContainer = document.querySelector('.drag-container')
+
+const $uploadContainer = document.querySelector('#service-upload')
+const $metaContainer = document.querySelector('#meta-upload')
+const $submit = document.querySelector('#submit')
+
+const onDragEnter = () => $dragContainer.classList.add('dragging')
+
+const onDragLeave = () => $dragContainer.classList.remove('dragging')
+
+
+let serviceSource;
+let metaSource;
+
+async function readFile(file){
+  return new Promise((resolve, reject) => {
+    var fr = new FileReader();  
+    fr.onload = () => {
+      resolve(fr.result )
+    };
+    fr.onerror = reject;
+    fr.readAsText(file);
+  });
+}
+
+async function submitButton() {
+	const aa = await readFile(metaSource);
+	await wasmpeer.manager.storeServiceTsd(serviceSource.name, serviceSource, null, aa);
+}
+
+async function onDropService (event) {
+  onDragLeave()
+  event.preventDefault()
+
+
+  const files = Array.from(event.dataTransfer.files)
+
+  for (const file of files) {
+		serviceSource = file;
+  }
+}
+
+async function onDropMeta (event) {
+  onDragLeave()
+  event.preventDefault()
+
+  const files = Array.from(event.dataTransfer.files)
+
+  for (const file of files) {
+		metaSource = file;
+  }
+}
+
 /* ===========================================================================
    Boot the app
    =========================================================================== */
 
 const startApplication = async () => {
+	 // Setup event listeners
+	$dragContainer.addEventListener('dragenter', onDragEnter)
+	$dragContainer.addEventListener('dragover', onDragEnter)
+	$dragContainer.addEventListener('dragleave', onDragLeave)
+
+	$submit.addEventListener('click', submitButton)
+
+	$uploadContainer.addEventListener('drop', async e => {
+		try {
+			await onDropService(e)
+		} catch (err) {
+			err.message = `Failed to add files: ${err.message}`
+			onError(err)
+		}
+	})
+
+	$metaContainer.addEventListener('drop', async e => {
+		try {
+			await onDropMeta(e)
+		} catch (err) {
+			err.message = `Failed to add files: ${err.message}`
+			onError(err)
+		}
+	})
+
 	const log = () => {};
-	wasmpeer = await Wasmpeer.buildBrowser({
-		log,
-		// ..._config
-	});
+	wasmpeer = await Wasmpeer.buildBrowser();
 
 	info = await wasmpeer.instanceId;
-	$nodeId.innerText = info.id
+	$nodeId.innerText = info
 	$allDisabledButtons.forEach(b => { b.disabled = false })
 	$allDisabledInputs.forEach(b => { b.disabled = false })
 	$allDisabledElements.forEach(el => { el.classList.remove('disabled') })
@@ -110,10 +185,9 @@ const startApplication = async () => {
 		link.innerHTML = '<button class="table-action"></button>'
 		downloadCell.appendChild(link)
 	
-		row.appendChild(peerIdCell)
-		row.appendChild(nameCell)
 		row.appendChild(hashCell)
-		row.appendChild(sizeCell)
+		row.appendChild(nameCell)
+
 		row.appendChild(downloadCell)
 	
 		$fileHistory.insertBefore(row, $fileHistory.firstChild)

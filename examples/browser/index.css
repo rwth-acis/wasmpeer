@@ -3,7 +3,7 @@
    Layout
    =========================================================================== */
 
-   * {
+  * {
     box-sizing: border-box;
   }
   
@@ -251,7 +251,7 @@
     opacity: 0.5;
   }
   
-  #drag-container {
+  .drag-container {
     height: 10em;
     margin-top: 1em;
     display: flex;
@@ -262,13 +262,13 @@
     opacity: 0.7;
   }
   
-  #drag-container.dragging {
+  .drag-container.dragging {
     background-color: #E7E8EE;
     opacity: 1;
   
   }
   
-  #drag-container p {
+  .drag-container p {
     margin-left: 1em;
   }
   
