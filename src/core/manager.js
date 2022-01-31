@@ -13,9 +13,10 @@ export default class Manager {
         this.compiler = options.compiler || null;
         this.activeServices = [];
         this.ownServices = [];
-		this.lookup = {};
+        this.lookup = {};
         this.db = {};
         this.connector = connector;
+        this.logger = options.logger || (() => { });
 
         try {
             // init repo
@@ -24,9 +25,9 @@ export default class Manager {
                 if (!exists) {
                     return;
                 }
-                
+
                 const catalogRaw = await all(this.connector.ipfs.files.read('/catalog.json'));
-                this.ownServices = JSON.parse((new TextDecoder()).decode(uint8ArrayConcat(catalogRaw))|| '[]');
+                this.ownServices = JSON.parse((new TextDecoder()).decode(uint8ArrayConcat(catalogRaw)) || '[]');
 
                 this.ownServices.forEach(async hash => {
                     const meta = await this.connector.getFileInJSON(hash);
@@ -38,12 +39,12 @@ export default class Manager {
                 })
             })();
         }
-        catch(err) {
-            console.error('instantiate catalog error', error)
+        catch (err) {
+            this.logger.error('instantiate catalog error', error)
         }
 
         this.incomingBroadcast = this.incomingBroadcast.bind(this);
-        this.connector.startSubscribe(this.incomingBroadcast); 
+        this.connector.startSubscribe(this.incomingBroadcast);
 
         this.outgoingBroadcast();
     }
@@ -100,8 +101,8 @@ export default class Manager {
     }
 
     getAvailableServices() {
-		return this.activeServices.map(x => this.lookup[x]);
-	}	
+        return this.activeServices.map(x => this.lookup[x]);
+    }
 
     async getService(id) {
         const content = await this.connector.getFile(id);
@@ -115,28 +116,28 @@ export default class Manager {
 
     // #region broadcaster
     async incomingBroadcast(message) {
-		const myId = this.connector.id;
-		const hash = message.data.toString();
-		const senderId = message.from;
-		if (myId !== senderId && !this.activeServices.includes(hash)) {
+        const myId = this.connector.id;
+        const hash = message.data.toString();
+        const senderId = message.from;
+        if (myId !== senderId && !this.activeServices.includes(hash)) {
             const meta = await this.connector.getFileInJSON(hash);
             this.activeServices.push(hash);
             this.lookup[hash] = {
                 hash: hash,
                 name: meta[_nameId]
             }
-		}
-	}
+        }
+    }
 
     outgoingBroadcast() {
         setInterval(async () => {
             try {
-                await Promise.all(this.ownServices.map(this.connector.publishHash)); 
+                await Promise.all(this.ownServices.map(this.connector.publishHash));
             } catch (err) {
                 err.message = `Failed to publish the file list: ${err.message}`;
                 throw new Error(err.message);
             }
-        }, 10000);    
-	}
+        }, 10000);
+    }
     // #endregion
 }

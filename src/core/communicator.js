@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { ChannelProtocol } from './connector.js';
 export default class Communicator {
-	constructor(connector) {
+	constructor(connector, options) {
 		this.connector = connector;
 		this.callStack = {};
 		this.execute = async () => { };
@@ -11,6 +11,8 @@ export default class Communicator {
 
 		this.connector.libp2p.handle(ChannelProtocol.REQUEST, this.handleRequest);
 		this.connector.libp2p.handle(ChannelProtocol.RESPONSE, this.handleResponse);
+
+		this.logger = options.logger || (() => { });
 	}
 
 	getAvailablePeers() {
@@ -43,7 +45,7 @@ export default class Communicator {
 		try {
 			const req = await ChannelProtocol.receive(stream);
 
-			console.log('INCOMING REQ: ', req);
+			this.logger.log('INCOMING REQ: ', req);
 			const resp = await this.execute(req.serviceId, req.method, req.parameter);
 			const payload = {
 				req: req,
@@ -54,7 +56,7 @@ export default class Communicator {
 			await ChannelProtocol.flush();
 		}
 		catch (err) {
-			console.error(err);
+			this.logger.error(err);
 		}
 	}
 
@@ -71,7 +73,7 @@ export default class Communicator {
 			await ChannelProtocol.flush();
 		}
 		catch (err) {
-			console.error(err);
+			this.logger.error(err);
 		}
 	}
 }

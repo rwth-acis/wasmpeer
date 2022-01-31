@@ -143,8 +143,7 @@ const startApplication = async () => {
 		}
 	})
 
-	const log = () => {};
-	wasmpeer = await Wasmpeer.buildBrowser();
+	wasmpeer = await Wasmpeer.buildBrowser({ logger: console });
 
 	info = await wasmpeer.instanceId;
 	$nodeId.innerText = info

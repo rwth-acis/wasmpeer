@@ -2,13 +2,14 @@
 import Runner from './runner.js';
 
 export default class Executor {
-	constructor(manager, communicator) {
+	constructor(manager, communicator, options) {
 		this.manager = manager;
 		this.communicator = communicator;
+		this.options = options;
 	}
 
 	run(id, funcName, input) {
-		const runner = new Runner(this.manager, this.communicator);
+		const runner = new Runner(this.manager, this.communicator, this.options);
 		return runner.run(id, funcName, input);
 	}
 

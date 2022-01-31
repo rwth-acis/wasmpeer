@@ -8,11 +8,13 @@ export default class Wasmpeer {
 		this.instanceId = connector.id;
 
 		this.manager = new Manager(connector, options);
-		this.communicator = new Communicator(connector, this.manager);
-		this.executor = new Executor(this.manager, this.communicator);
+		this.communicator = new Communicator(connector, this.manager, options);
+		this.executor = new Executor(this.manager, this.communicator, options);
 
 		this.connector = connector;
 		this.communicator.execute = this.invoke.bind(this);
+
+		this.logger = options.logger || (() => { });
 	}
 
 	static async buildBrowser(options = {}) {
@@ -42,7 +44,7 @@ export default class Wasmpeer {
 	}
 
 	async invoke(serviceId, endpoint, params) {
-		console.log('invoking', serviceId, endpoint, params);
+		this.logger.log('invoking', serviceId, endpoint, params);
 		const res = await this.executor.run(serviceId, endpoint, params);
 		return res;
 	}

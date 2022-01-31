@@ -36,6 +36,7 @@ export default class Connector {
 		this.FILESHash = {};
 		this.opts = {};
 		this.db = null;
+		this.logger = options.logger || (() => { });
 	}
 
 	async build() {
@@ -53,7 +54,7 @@ export default class Connector {
 		this.db = db;
 
 		db.events.on('replicated', address => {
-			console.log('dada', address);
+			this.logger.log('dada', address);
 		})
 		this.ipfs = ipfs;
 		this.info = await ipfs.id();
@@ -75,9 +76,9 @@ export default class Connector {
 			throw new Error('No CID');
 		}
 		for await (const file of this.ipfs.ls(id)) {
-				if (file.type === 'file') {
-					return uint8ArrayConcat(await all(this.ipfs.cat(file.cid)));
-				}
+			if (file.type === 'file') {
+				return uint8ArrayConcat(await all(this.ipfs.cat(file.cid)));
+			}
 		}
 		throw new Error('File not exist');
 	}
@@ -90,12 +91,12 @@ export default class Connector {
 
 	startSubscribe(handler) {
 		try {
-			console.log('about to ', this.workspace);
+			this.logger.log('about to ', this.workspace);
 			this.ipfs.pubsub.subscribe(this.workspace, handler);
 		} catch (err) {
 			err.message = `Failed to subscribe to the workspace: ${err.message}`;
 			throw new Error(err.message);
-		}		
+		}
 	}
 
 	publishHash(hash) {
@@ -245,7 +246,7 @@ export const ChannelProtocol = {
 			);
 			return;
 		} catch (err) {
-			console.error('Could not negotiate chat protocol stream with peer', err);
+			this.logger.error('Could not negotiate chat protocol stream with peer', err);
 		}
 	}
 }
