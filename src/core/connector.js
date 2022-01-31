@@ -21,7 +21,7 @@ export default class Connector {
 	constructor(options = {}) {
 
 		this.workspace = options.workspaceName || __defaultWorkspace;
-		this.repoName = options.repoName || null;
+		this.repoName = '.ipfs/' + (options.repoName || 'wasmpeer');
 
 		this.libp2p = null;
 		this.ipfs = null;
@@ -50,12 +50,10 @@ export default class Connector {
 		}
 		await ipfs.start();
 		const orbitdb = await OrbitDB.createInstance(ipfs);
-		const db = await orbitdb.keyvalue(this.workspace);
-		this.db = db;
+		const db = await orbitdb.docstore(this.workspace);
+		db.load();
 
-		db.events.on('replicated', address => {
-			this.logger.log('dada', address);
-		})
+		this.db = db;
 		this.ipfs = ipfs;
 		this.info = await ipfs.id();
 
@@ -91,7 +89,7 @@ export default class Connector {
 
 	startSubscribe(handler) {
 		try {
-			this.logger.log('about to ', this.workspace);
+			this.logger.log('listening on: ' + this.workspace);
 			this.ipfs.pubsub.subscribe(this.workspace, handler);
 		} catch (err) {
 			err.message = `Failed to subscribe to the workspace: ${err.message}`;

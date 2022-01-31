@@ -9,7 +9,7 @@ export default class Wasmpeer {
 
 		this.manager = new Manager(connector, options);
 		this.communicator = new Communicator(connector, this.manager, options);
-		this.executor = new Executor(this.manager, this.communicator, options);
+		this.executor = new Executor(this.manager, connector, options);
 
 		this.connector = connector;
 		this.communicator.execute = this.invoke.bind(this);

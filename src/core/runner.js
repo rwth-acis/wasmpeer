@@ -2,9 +2,9 @@
 import KeyValueStore from './keyvalue-store.js';
 import loader from "@assemblyscript/loader";
 export default class Runner {
-	constructor(manager, communicator, options) {
+	constructor(manager, connector, options) {
 		this.manager = manager;
-		this.communicator = communicator;
+		this.connector = connector;
 		this.keyValueStore = {
 			get: () => { },
 			set: () => { }
@@ -14,13 +14,9 @@ export default class Runner {
 
 	async run(id, funcName, input) {
 		const service = await this.manager.getService(id);
-		this.logger.log(service);
-		const keyvalue = this.manager.connector.db.get(id) || {};
-
-		this.keyValueStore = new KeyValueStore(keyvalue);
-
+		this.keyValueStore = new KeyValueStore(this.connector, id);
 		const res = await this.runBasic(service.source, funcName, input, service.meta);
-		await this.manager.connector.db.put(id, keyvalue);
+		await this.keyValueStore.save();
 
 		return res;
 	}

@@ -18,7 +18,7 @@ describe('WASMPEER', () => {
 		connector = new Connector(options);
 		await connector.buildNodeJs();
 		manager = new Manager(connector, options);
-		executor = new Executor(manager, null, options);
+		executor = new Executor(manager, connector, options);
 		assert.ok(connector);
 	});
 
@@ -167,16 +167,11 @@ describe('WASMPEER', () => {
 
 		it('Execute: Add the second issue', async () => {
 			await executor.run(id, 'add', input2);
-
-			Array.from(Array(100).keys()).forEach(async x => {
-				await executor.run(id, 'add', input2);
-			})
 		});
 
 		it('Execute: Get back the list of issues and previous input should exist in the list', async () => {
-			const res = await executor.run(id, 'list', null);
 
-			console.log(res);
+			const res = await executor.run(id, 'list', null);
 
 			const resInput1 = res.find(x => x.title === input1.title && x.description === input1.description);
 			assert.ok(resInput1);
@@ -190,7 +185,7 @@ describe('WASMPEER', () => {
 		if (connector) {
 			await connector.db.close();
 			await connector.ipfs.stop();
-			console.log('close ipfs');
+			// console.log('close ipfs');
 		}
 	})
 });
