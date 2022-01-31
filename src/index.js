@@ -44,7 +44,7 @@ export default class Wasmpeer {
 	}
 
 	async invoke(serviceId, endpoint, params) {
-		this.logger.log('invoking', serviceId, endpoint, params);
+		this.logger.log('Invoking: ' + serviceId + ' ' + endpoint + ' ' + JSON.stringify(params));
 		const res = await this.executor.run(serviceId, endpoint, params);
 		return res;
 	}

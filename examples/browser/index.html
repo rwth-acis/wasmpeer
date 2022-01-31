@@ -35,20 +35,24 @@
                     <div class="mt-4 p-1 bg-light border rounded-3">
                         <div id="peers" class="box disabled">
                             <h2>Detected peers</h2>
-                            <ul id="workspace-peers" style="padding-left: 16px;"></ul>
+                            <ul id="peers" style="padding-left: 16px;"></ul>
                         </div>
                     </div>
                     <div class="mt-4 p-1 bg-light border rounded-3">
-                        <button class="btn btn-primary" id="uploadBtn">Upload new service</button>
-                        <div id="uploadForm" style="display: none;">
-                            <div class="drag-container" id="service-upload">
-                                <p><b>Drag &amp; drop</b> the source file to upload the service.</p>
+                        <button class="btn btn-primary" id="uploadBtn">Add new service</button>
+                        <div class="box" id="uploadForm" style="display: none;">
+                            <h2 style="overflow: hidden; text-overflow: ellipsis;">Add new service</h2>
+                            <div class="form-group">
+                                <label for="service-upload">Source file (*.wasm)</label>
+                                <input type="file" class="form-control-file" id="service-upload" accept=".wasm">
                             </div>
-                            <div class="drag-container" id="meta-upload">
-                                <p><b>Drag &amp; drop</b> the meta file of the service.</p>
+                            <div class="form-group mt-2">
+                                <label for="meta-upload">Meta file (*.d.ts)</label>
+                                <input type="file" class="form-control-file" id="meta-upload" accept=".d.ts">
                             </div>
-                            <div>
-                                <button id="submit">Submit</button>
+                            <div class="form-group mt-3">
+                                <button class="btn btn-primary" id="submitBtn">Submit</button>
+                                <button class="btn btn-default" id="cancelBtn">Cancel</button>
                             </div>
                         </div>
                     </div>
@@ -58,7 +62,7 @@
                     <div class="h-100 p-1 bg-light border rounded-3">
                         <div id="files" class="box disabled" ondragover="event.preventDefault()">
                             <h2>Services</h2>
-                            <table id="file-history" class="table table-sm">
+                            <table id="serviceTable" class="table table-sm">
                                 <thead>
                                     <tr>
                                         <th>ID</th>
