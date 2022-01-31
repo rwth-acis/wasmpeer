@@ -111,31 +111,38 @@ const startApplication = async () => {
 
 	const refreshHTMLServiceList = () => {
 		$serviceTable.innerHTML = '';
-		existingServices.forEach(x => {
-			const nameCell = document.createElement('td')
-			nameCell.innerHTML = x.name
+		const groups = [...new Set(existingServices.map(x => x.owner))];
+		groups.forEach(key => {
+			const groupRow = document.createElement('tr')
+			const groupCell = document.createElement('td')
+			groupCell.colSpan = 2
+			groupCell.innerHTML = key || 'LOCAL'
+			groupCell.style = "background-color: grey"
+			groupRow.appendChild(groupCell)
 
-			const peerIdCell = document.createElement('td')
-			peerIdCell.innerHTML = x.messageSender
+			existingServices.filter(x => x.owner === key).forEach(x => {
+				const nameCell = document.createElement('td')
+				nameCell.innerHTML = x.name
 
-			const hashCell = document.createElement('td')
-			hashCell.innerHTML = x.hash
+				const hashCell = document.createElement('td')
+				hashCell.innerHTML = x.hash
 
-			const downloadCell = document.createElement('td')
-			const file = new window.Blob([x.data], { type: 'application/octet-binary' })
-			const url = window.URL.createObjectURL(file)
-			const link = document.createElement('a')
-			link.setAttribute('href', url)
-			link.setAttribute('download', x.name)
-			link.innerHTML = '<button class="table-action"></button>'
-			downloadCell.appendChild(link)
+				const downloadCell = document.createElement('td')
+				const link = document.createElement('button')
+				link.onclick = async function () {
+					const aa = await window.wasmpeer.invoke(x.hash, 'list', {})
+					console.log(aa)
+				}
+				downloadCell.appendChild(link)
 
-			const row = document.createElement('tr')
-			row.appendChild(hashCell)
-			row.appendChild(nameCell)
-			row.appendChild(downloadCell)
-			$serviceTable.insertBefore(row, $serviceTable.firstChild)
-		});
+				const row = document.createElement('tr')
+				row.appendChild(nameCell)
+				row.appendChild(downloadCell)
+				$serviceTable.insertBefore(row, $serviceTable.firstChild)
+			});
+			$serviceTable.insertBefore(groupRow, $serviceTable.firstChild)
+		})
+
 	}
 
 	const reloadServices = () => {

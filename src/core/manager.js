@@ -124,7 +124,8 @@ export default class Manager {
             this.activeServices.push(hash);
             this.lookup[hash] = {
                 hash: hash,
-                name: meta[_nameId]
+                name: meta[_nameId],
+                owner: senderId
             }
         }
     }
