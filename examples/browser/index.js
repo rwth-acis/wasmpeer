@@ -13,7 +13,8 @@ const $nodeId = document.querySelector('.node-id')
 const $logs = document.querySelector('#logs')
 // Peers
 const $peers = document.querySelector('#peers')
-const $workspacePeersList = $peers.querySelector('#workspace-peers')
+
+
 
 const $fileHistory = document.querySelector('#file-history tbody')
 
@@ -24,9 +25,10 @@ const $allDisabledElements = document.querySelectorAll('.disabled')
 let wasmpeer
 let info
 
-function onSuccess(msg) {
-	$logs.classList.add('success')
-	$logs.innerHTML = msg
+function logTo(msg, type) {
+	type = type || 'INFO'
+	const timeFormat = (new Date()).toISOString().split('T')[1].split('.')[0]
+	$logs.innerHTML = `${$logs.innerHTML} <br /> ${timeFormat} [${type}] ${msg}`
 }
 
 function onError(err) {
@@ -150,70 +152,6 @@ const startApplication = async () => {
 	$allDisabledInputs.forEach(b => { b.disabled = false })
 	$allDisabledElements.forEach(el => { el.classList.remove('disabled') })
 
-	async function refreshWorkspacePeerList() {
-		const peers = await wasmpeer.communicator.getAvailablePeers();
-		const peersAsHtml = peers.reverse()
-			.map((addr) => {
-				return `<tr><td>${addr}</td></tr>`
-			}).join('')
-	
-		$workspacePeersList.innerHTML = peersAsHtml
-	}
-
-	function appendFile(name, hash, size, data, messageSender) {
-		const file = new window.Blob([data], { type: 'application/octet-binary' })
-	
-		const url = window.URL.createObjectURL(file)
-		const row = document.createElement('tr')
-	
-		const nameCell = document.createElement('td')
-		nameCell.innerHTML = name
-	
-		const peerIdCell = document.createElement('td')
-		peerIdCell.innerHTML = messageSender
-	
-		const hashCell = document.createElement('td')
-		hashCell.innerHTML = hash
-	
-		const sizeCell = document.createElement('td')
-		sizeCell.innerText = size
-	
-		const downloadCell = document.createElement('td')
-		const link = document.createElement('a')
-		link.setAttribute('href', url)
-		link.setAttribute('download', name)
-		link.innerHTML = '<button class="table-action"></button>'
-		downloadCell.appendChild(link)
-	
-		row.appendChild(hashCell)
-		row.appendChild(nameCell)
-
-		row.appendChild(downloadCell)
-	
-		$fileHistory.insertBefore(row, $fileHistory.firstChild)
-	}
-
-	setInterval(async () => {
-		try {
-			await refreshWorkspacePeerList()
-		} catch (err) {
-			err.message = `Failed to refresh the workspace peer list: ${err.message}`
-			onError(err)
-		}
-	}, 1000)
-
-	setInterval(async () => {
-		try {
-			$fileHistory.innerHTML = ''
-			const files = wasmpeer.manager.getAvailableServices();
-			files.forEach(x => {
-				appendFile(x.name, x.hash, x.size, x.data, x.messageSender);
-			});
-		} catch (err) {
-			err.message = `Failed to publish the file list: ${err.message}`
-		}
-	}, 5000)
-
 	window.wasmpeer = wasmpeer;
 
 	// function bootstrap(manager) {
@@ -230,7 +168,108 @@ const startApplication = async () => {
 	// 	const objStr = await fetch(path2).then(resp => resp.arrayBuffer());
 	// 	const objDStr = await fetch(path2).then(resp => resp.arrayBuffer());
 	// 	const idStr = await manager.storeService(filename2, objStr, objDStr);
-	// }	
+	// }
+
+	// #region service list
+	let existingServices = []
+
+	const refreshHTMLServiceList = () => {
+		$fileHistory.innerHTML = '';
+		existingServices.forEach(x => {
+			const nameCell = document.createElement('td')
+			nameCell.innerHTML = x.name
+
+			const peerIdCell = document.createElement('td')
+			peerIdCell.innerHTML = x.messageSender
+
+			const hashCell = document.createElement('td')
+			hashCell.innerHTML = x.hash
+
+			const downloadCell = document.createElement('td')
+			const file = new window.Blob([x.data], { type: 'application/octet-binary' })
+			const url = window.URL.createObjectURL(file)
+			const link = document.createElement('a')
+			link.setAttribute('href', url)
+			link.setAttribute('download', x.name)
+			link.innerHTML = '<button class="table-action"></button>'
+			downloadCell.appendChild(link)
+
+			const row = document.createElement('tr')
+			row.appendChild(hashCell)
+			row.appendChild(nameCell)
+			row.appendChild(downloadCell)
+			$fileHistory.insertBefore(row, $fileHistory.firstChild)
+		});
+	}
+
+	const reloadServices = () => {
+		const services = wasmpeer.manager.getAvailableServices();
+
+		const toBeAdd = services.filter(x => !existingServices.includes(x))
+		const toBeRemoved = existingServices.filter(x => !services.includes(x))
+
+		if (toBeAdd.length === 0 && toBeRemoved.length === 0) {
+			return;
+		}
+
+		toBeAdd.forEach(x => logTo('Found new service: ' + x))
+		toBeRemoved.forEach(x => logTo('Remove service: ' + x))
+
+		existingServices = services
+
+		refreshHTMLServiceList()
+	}
+
+	setInterval(async () => {
+		try {
+			reloadServices()
+		} catch (err) {
+			err.message = `Failed to publish the service list: ${err.message}`
+		}
+	}, 5000)
+	// #endregion
+
+	// #region peer list
+	const $workspacePeersList = document.querySelector('#workspace-peers')
+
+	let existingPeers = []
+
+	const refreshHTMLPeerList = () => {
+		const peersAsHtml = existingPeers
+			.reverse()
+			.map((addr) => `<li><pre style="overflow: visible; overflow-wrap: break-word; margin: 0px">${addr}</pre></li>`)
+			.join('')
+
+		$workspacePeersList.innerHTML = peersAsHtml
+	}
+
+	const reloadPeers = async () => {
+		const peers = await wasmpeer.communicator.getAvailablePeers()
+
+		const toBeAdd = peers.filter(x => !existingPeers.includes(x))
+		const toBeRemoved = existingPeers.filter(x => !peers.includes(x))
+
+		if (toBeAdd.length === 0 && toBeRemoved.length === 0) {
+			return;
+		}
+
+		toBeAdd.forEach(x => logTo('Found new peer: ' + x))
+		toBeRemoved.forEach(x => logTo('Remove peer: ' + x))
+
+		existingPeers = peers
+
+		refreshHTMLPeerList()
+	}
+
+	setInterval(async () => {
+		try {
+			await reloadPeers();
+		} catch (err) {
+			err.message = `Failed to refresh the peer list: ${err.message}`
+			onError(err)
+		}
+	}, 1000)
+	// #endregion
 }
 
 startApplication()
