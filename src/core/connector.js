@@ -50,7 +50,13 @@ export default class Connector {
 		}
 		await ipfs.start();
 		const orbitdb = await OrbitDB.createInstance(ipfs);
-		const db = await orbitdb.docstore(this.workspace);
+		const db = await orbitdb.docstore(this.workspace, {
+			create: true,
+			sync: true,
+			accessController: {
+				write: ['*'],
+			}
+		});
 		db.load();
 
 		this.db = db;
@@ -224,7 +230,7 @@ export const ChannelProtocol = {
 	flush: async (stream) => {
 		await pipe([], stream);
 	},
-	receive: async (stream) => {
+	receive: async (stream) =>
 		await pipe(
 			stream,
 			async (source) => {
@@ -234,7 +240,7 @@ export const ChannelProtocol = {
 				}
 			}
 		)
-	},
+	,
 	send: async (connection, channel, payload) => {
 		try {
 			const { stream } = await connection.newStream([channel]);

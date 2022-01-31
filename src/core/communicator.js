@@ -31,7 +31,6 @@ export default class Communicator {
 		if (!connection) {
 			throw new Error('Connection not found');
 		}
-
 		const ress = new Promise(async (resolve, reject) => {
 			await ChannelProtocol.send(connection, ChannelProtocol.REQUEST, payload);
 			this.callStack[payload.callId] = resolve;
@@ -45,7 +44,7 @@ export default class Communicator {
 		try {
 			const req = await ChannelProtocol.receive(stream);
 
-			this.logger.log('INCOMING REQ: ', req);
+			this.logger.log('INCOMING REQ: ' + JSON.stringify(req));
 			const resp = await this.execute(req.serviceId, req.method, req.parameter);
 			const payload = {
 				req: req,

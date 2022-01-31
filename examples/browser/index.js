@@ -26,9 +26,9 @@ const onError = (err) => {
 
 window.onerror = onError
 
-console.log = logTo;
-console.warn = logTo;
-console.error = logTo;
+// console.log = logTo;
+// console.warn = logTo;
+// console.error = logTo;
 
 // #endregion
 
