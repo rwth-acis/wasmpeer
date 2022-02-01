@@ -39,21 +39,9 @@
                         </div>
                     </div>
                     <div class="mt-4 p-1 bg-light border rounded-3">
-                        <button class="btn btn-primary disabled" id="uploadBtn">Add new service</button>
-                        <div class="box disabled" id="uploadForm" style="display: none;">
-                            <h2 style="overflow: hidden; text-overflow: ellipsis;">Add new service</h2>
-                            <div class="form-group">
-                                <label for="service-upload">Source file (*.wasm)</label>
-                                <input type="file" class="form-control-file" id="service-upload" accept=".wasm">
-                            </div>
-                            <div class="form-group mt-2">
-                                <label for="meta-upload">Meta file (*.d.ts)</label>
-                                <input type="file" class="form-control-file" id="meta-upload" accept=".d.ts">
-                            </div>
-                            <div class="form-group mt-3">
-                                <button class="btn btn-primary" id="submitBtn">Submit</button>
-                                <button class="btn btn-default" id="cancelBtn">Cancel</button>
-                            </div>
+                        <div class="box disabled ">
+                            <h2>Logs</h2>
+                            <pre id="logs" style="height: 100%; max-height: 300px; overflow-y: scroll;"></pre>
                         </div>
                     </div>
                 </div>
@@ -75,10 +63,28 @@
                                     </tr>
                                 </tbody>
                             </table>
+                            <button class="btn btn-primary btn-sm disabled" id="uploadBtn">Add new service</button>
                         </div>
                     </div>
                 </div>
-                <div  class="col-lg-4 col-md-12">
+                <div class="col-lg-4 col-md-12">
+                    <div class="mt-4 p-1 bg-light border rounded-3" id="uploadForm" style="display: none;">
+                        <div class="box disabled">
+                            <h2 style="overflow: hidden; text-overflow: ellipsis;">Add new service</h2>
+                            <div class="form-group">
+                                <label for="service-upload">Source file (*.wasm)</label>
+                                <input type="file" class="form-control-file" id="service-upload" accept=".wasm">
+                            </div>
+                            <div class="form-group mt-2">
+                                <label for="meta-upload">Meta file (*.d.ts)</label>
+                                <input type="file" class="form-control-file" id="meta-upload" accept=".d.ts">
+                            </div>
+                            <div class="form-group mt-3">
+                                <button class="btn btn-primary" id="submitBtn">Submit</button>
+                                <button class="btn btn-default" id="cancelBtn">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
                     <div id="executionForm" style="display: none;" class="mt-4 p-1 bg-light border rounded-3">
                         <div class="box disabled">
                             <h2 style="overflow: hidden; text-overflow: ellipsis;">Service execution</h2>
@@ -108,17 +114,12 @@
 
                             <div class="form-group mt-4">
                                 <label for="serviceResult">Result</label>
-                                <textarea class="form-control" disabled id="serviceResult" rows="5">
+                                <textarea class="form-control" disabled id="serviceResult" rows="7" style="font-size: 0.75em;">
+                                </textarea>
                             </div>
                         </div>
                     </div>
-                    <div class="mt-4 p-1 bg-light border rounded-3">
-                        <div class="box disabled ">
-                            <h2>Logs</h2>
-                            <pre id="logs" style="height: 100%">
-                            </pre>
-                        </div>
-                    </div>
+                    
                 </div>
             </div>
         

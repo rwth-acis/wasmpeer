@@ -26,9 +26,9 @@ const onError = (err) => {
 
 window.onerror = onError
 
-// console.log = logTo;
-// console.warn = logTo;
-// console.error = logTo;
+console.log = logTo;
+console.warn = logTo;
+console.error = logTo;
 
 // #endregion
 
@@ -82,7 +82,7 @@ const startApplication = async () => {
 
 		const res = await wasmpeer.invoke($idField.value.trim(), $targetField.value, inputs)
 
-		$resultField.innerHTML = JSON.stringify(res, null, 2);
+		$resultField.innerHTML = JSON.stringify(res, null, 4);
 	}
 
 	const populateParams = (key) => {
