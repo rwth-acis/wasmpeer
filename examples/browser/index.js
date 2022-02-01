@@ -8,7 +8,7 @@ const $logs = document.querySelector('#logs')
 const logTo = (msg, type) => {
 	type = type || 'INFO'
 	const timeFormat = (new Date()).toISOString().split('T')[1].split('.')[0]
-	$logs.innerHTML = `${$logs.innerHTML.trimEnd()}${timeFormat} [${type}] ${msg}<br />`
+	$logs.innerHTML = `${timeFormat} [${type}] ${msg}<br />${$logs.innerHTML.trimEnd()}`
 }
 
 const onError = (err) => {
@@ -40,11 +40,132 @@ const startApplication = async () => {
 	const $nodeId = document.querySelector('.node-id')
 	$nodeId.innerText = await wasmpeer.instanceId;
 
-	document.querySelectorAll('button:disabled').forEach(b => { b.disabled = false })
-	document.querySelectorAll('input:disabled').forEach(b => { b.disabled = false })
 	document.querySelectorAll('.disabled').forEach(el => { el.classList.remove('disabled') })
 
 	window.wasmpeer = wasmpeer;
+
+	// #region executor
+	let selectedMeta
+	let selectedKey
+
+	const $executionForm = document.querySelector('#executionForm')
+	const $targetField = document.querySelector('#serviceTarget')
+	const $paramsContainer = document.querySelector('#serviceParams')
+	const $idField = document.querySelector('#serviceId')
+	const $nameField = document.querySelector('#serviceName')
+	const $resultField = document.querySelector('#serviceResult')
+	const $serviceInput = document.querySelector('#serviceInput')
+
+	const $executeBtn = document.querySelector('#executeBtn')
+
+	const $closeBtn = document.querySelector('#closeBtn')
+
+	const execute = async () => {
+		$resultField.innerHTML = 'Executing...'
+
+		// REMARK: for advance parametering later
+		/*
+		const inputs = {}
+		Object.keys(selectedMeta[selectedKey].paramsType).forEach(x => {
+			const a = document.querySelector('#param_' + x)
+			inputs[x] = a.value
+		})
+		*/
+		let inputs = {}
+		try {
+			const raw = $serviceInput.value.trim()
+			inputs = raw ? JSON.parse(raw) : {};
+		}
+		catch (err) {
+			throw new Error('Input not in valid JSON format')
+		}
+
+		const res = await wasmpeer.invoke($idField.value.trim(), $targetField.value, inputs)
+
+		$resultField.innerHTML = JSON.stringify(res, null, 2);
+	}
+
+	const populateParams = (key) => {
+		if (Object.keys(selectedMeta[key].paramsType).length === 0) {
+			$paramsContainer.style = 'display: none'
+		} else {
+			$paramsContainer.style = 'display: block'
+		}
+
+		// REMARK: for advance parametering later
+		/*
+		$paramsContainer.innerHTML = '';
+		Objxect.keys(selectedMeta[key].paramsType).forEach(x => {
+			const row = document.createElement('div')
+			row.className = 'form-group mt-2'
+
+			const label = document.createElement('label')
+			label.for = 'param_' + x
+			label.innerHTML = x
+
+			const textarea = document.createElement('textarea')
+			textarea.className = 'form-control'
+			textarea.id = 'param_' + x
+
+			row.insertBefore(textarea, row.firstChild)
+			row.insertBefore(label, row.firstChild)
+
+			$paramsContainer.insertBefore(row, $paramsContainer.firstChild)
+		})
+		*/
+	}
+
+	const resetExecutor = () => {
+		$executionForm.style = 'display: none'
+		$idField.value = ''
+		$nameField.value = ''
+		$targetField.innerHTML = ''
+		$targetField.value = ''
+		$serviceInput.value = ''
+		$resultField.innerHTML = ''
+	}
+
+	const openService = async (hash) => {
+		resetExecutor()
+		$executionForm.style = 'display: block'
+
+		const { meta } = await window.wasmpeer.manager.getService(hash)
+
+		$nameField.value = meta._name
+		$idField.value = hash
+
+		$targetField.addEventListener('change', () => {
+			populateParams($targetField.value)
+		})
+
+		let first = false;
+		$targetField.innerHTML = ''
+		Object.keys(meta).filter(x => !x.startsWith('_')).forEach(x => {
+			const row = document.createElement('option')
+			row.innerHTML = x
+			row.value = x
+			if (!first) {
+				row.selected = true
+				selectedKey = x
+				first = true
+			}
+			$targetField.insertBefore(row, $targetField.firstChild)
+		})
+
+		$targetField.value = selectedKey
+		selectedMeta = meta
+
+		populateParams(selectedKey)
+	}
+
+	$executeBtn.addEventListener('click', execute)
+
+	$closeBtn.addEventListener('click', () => {
+		resetExecutor()
+	})
+	// #endregion
+
+
 
 	// #region uploader
 	const $uploadForm = document.querySelector('#uploadForm')
@@ -130,9 +251,10 @@ const startApplication = async () => {
 				const downloadCell = document.createElement('td')
 				const link = document.createElement('button')
 				link.onclick = async function () {
-					const aa = await window.wasmpeer.invoke(x.hash, 'list', {})
-					console.log(aa)
+					openService(x.hash)
 				}
+				link.className = 'btn btn-primary btn-sm'
+				link.innerHTML = '>';
 				downloadCell.appendChild(link)
 
 				const row = document.createElement('tr')

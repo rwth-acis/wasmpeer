@@ -21,7 +21,7 @@
         <div class="container py-4">
             <header class="pb-3 border-bottom" style="padding-left: 0;">
                 <a href="/" class="d-flex align-items-center text-dark text-decoration-none">
-                    <span class="fs-4">Wasmpeer v1.0</span>
+                    <span class="fs-4 disabled">Wasmpeer v1.0</span>
                 </a>
             </header>
             <div class="row align-items-md-stretch">
@@ -39,8 +39,8 @@
                         </div>
                     </div>
                     <div class="mt-4 p-1 bg-light border rounded-3">
-                        <button class="btn btn-primary" id="uploadBtn">Add new service</button>
-                        <div class="box" id="uploadForm" style="display: none;">
+                        <button class="btn btn-primary disabled" id="uploadBtn">Add new service</button>
+                        <div class="box disabled" id="uploadForm" style="display: none;">
                             <h2 style="overflow: hidden; text-overflow: ellipsis;">Add new service</h2>
                             <div class="form-group">
                                 <label for="service-upload">Source file (*.wasm)</label>
@@ -59,8 +59,8 @@
                 </div>
                 
                 <div class="col-lg-4 col-md-12 mt-4">
-                    <div class="h-100 p-1 bg-light border rounded-3">
-                        <div id="files" class="box disabled" ondragover="event.preventDefault()">
+                    <div class="p-1 bg-light border rounded-3">
+                        <div class="box disabled">
                             <h2>Services</h2>
                             <table id="serviceTable" class="table table-sm">
                                 <thead>
@@ -78,9 +78,42 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-4 col-md-12 mt-4">
-                    <div class="h-100 p-1 bg-light border rounded-3">
-                        <div class="box disabled h-100">
+                <div  class="col-lg-4 col-md-12">
+                    <div id="executionForm" style="display: none;" class="mt-4 p-1 bg-light border rounded-3">
+                        <div class="box disabled">
+                            <h2 style="overflow: hidden; text-overflow: ellipsis;">Service execution</h2>
+                            <div class="form-group">
+                                <label for="serviceId">Service ID</label>
+                                <input type="text" disabled class="form-control" id="serviceId">
+                            </div>
+                            <div class="form-group mt-2">
+                                <label for="serviceName">Service Name</label>
+                                <input type="text" disabled class="form-control" id="serviceName">
+                            </div>
+                            <div class="form-group mt-2">
+                                <label for="serviceTarget">Function target</label>
+                                <select id="serviceTarget" class="form-select" aria-label="Default select example">
+                                </select>
+                            </div>
+                            <div id="serviceParams">
+                                <div class="form-group mt-2">
+                                    <label for="serviceInput">Input (JSON format)</label>
+                                    <textarea class="form-control" id="serviceInput">
+                                </div>
+                            </div>
+                            <div class="form-group mt-3">
+                                <button class="btn btn-primary" id="executeBtn">Execute</button>
+                                <button class="btn btn-default" id="closeBtn">Close</button>
+                            </div>
+
+                            <div class="form-group mt-4">
+                                <label for="serviceResult">Result</label>
+                                <textarea class="form-control" disabled id="serviceResult" rows="5">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 p-1 bg-light border rounded-3">
+                        <div class="box disabled ">
                             <h2>Logs</h2>
                             <pre id="logs" style="height: 100%">
                             </pre>
