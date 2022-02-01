@@ -106,3 +106,5 @@ dist
 .parcel-cache/*
 
 orbitdb/
+
+.ipfs/

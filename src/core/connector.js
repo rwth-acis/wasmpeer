@@ -15,33 +15,55 @@ import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 
 import OrbitDB from 'orbit-db';
 
+const __defaultWorkspace = 'wasmpeer';
+
 export default class Connector {
-	constructor(workspace) {
-		this.workspace = workspace;
+	constructor(options = {}) {
+
+		this.workspace = options.workspaceName || __defaultWorkspace;
+		this.repoName = '.ipfs/' + (options.repoName || 'wasmpeer');
+
 		this.libp2p = null;
 		this.ipfs = null;
 		this.info = null;
 		this.builder = this.builder.bind(this);
+		this.publishHash = this.publishHash.bind(this);
+
+		this.getFile = this.getFile.bind(this);
+		this.getFileInJSON = this.getFileInJSON.bind(this);
+
 		this.FILES = [];
 		this.FILESHash = {};
 		this.opts = {};
 		this.db = null;
+		this.logger = options.logger || (() => { });
 	}
 
 	async build() {
 		const ipfs = await IPFS.create({
 			libp2p: this.builder,
-			start: false
+			start: false,
+			repo: this.repoName
 		});
 		if (ipfs) {
 			await ipfs.stop();
 		}
 		await ipfs.start();
 		const orbitdb = await OrbitDB.createInstance(ipfs);
-		const db = await orbitdb.keyvalue('wasmpeer');
+		const db = await orbitdb.docstore(this.workspace, {
+			create: true,
+			sync: true,
+			accessController: {
+				write: ['*'],
+			}
+		});
+		db.load();
+
 		this.db = db;
 		this.ipfs = ipfs;
 		this.info = await ipfs.id();
+
+		this.id = this.libp2p.peerId.toB58String();
 	}
 
 	async buildNodeJs() {
@@ -53,31 +75,32 @@ export default class Connector {
 		return this.build();
 	}
 
-	async getFile(hash) {
-		if (!hash) {
-			throw new Error('No CID was inserted.');
+	async getFile(id) {
+		if (!id) {
+			throw new Error('No CID');
 		}
-
-		for await (const file of this.ipfs.ls(hash)) {
+		for await (const file of this.ipfs.ls(id)) {
 			if (file.type === 'file') {
-				const content = uint8ArrayConcat(await all(this.ipfs.cat(file.cid)));
-				return {
-					name: file.name,
-					hash: hash,
-					size: file.size,
-					content: content
-				};
+				return uint8ArrayConcat(await all(this.ipfs.cat(file.cid)));
 			}
 		}
+		throw new Error('File not exist');
+	}
+
+	async getFileInJSON(id) {
+		const raw = await this.getFile(id);
+		const rawStr = (new TextDecoder()).decode(raw);
+		return JSON.parse(rawStr);
 	}
 
 	startSubscribe(handler) {
 		try {
+			this.logger.log('listening on: ' + this.workspace);
 			this.ipfs.pubsub.subscribe(this.workspace, handler);
 		} catch (err) {
 			err.message = `Failed to subscribe to the workspace: ${err.message}`;
 			throw new Error(err.message);
-		}		
+		}
 	}
 
 	publishHash(hash) {
@@ -207,7 +230,7 @@ export const ChannelProtocol = {
 	flush: async (stream) => {
 		await pipe([], stream);
 	},
-	receive: async (stream) => {
+	receive: async (stream) =>
 		await pipe(
 			stream,
 			async (source) => {
@@ -217,7 +240,7 @@ export const ChannelProtocol = {
 				}
 			}
 		)
-	},
+	,
 	send: async (connection, channel, payload) => {
 		try {
 			const { stream } = await connection.newStream([channel]);
@@ -227,7 +250,7 @@ export const ChannelProtocol = {
 			);
 			return;
 		} catch (err) {
-			console.error('Could not negotiate chat protocol stream with peer', err);
+			this.logger.error('Could not negotiate chat protocol stream with peer', err);
 		}
 	}
 }

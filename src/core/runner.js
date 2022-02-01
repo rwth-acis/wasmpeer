@@ -2,24 +2,22 @@
 import KeyValueStore from './keyvalue-store.js';
 import loader from "@assemblyscript/loader";
 export default class Runner {
-	constructor(manager, communicator) {
+	constructor(manager, connector, options) {
 		this.manager = manager;
-		this.communicator = communicator;
+		this.connector = connector;
 		this.keyValueStore = {
 			get: () => { },
 			set: () => { }
 		};
+		this.logger = options.logger || (() => { });
 	}
 
 	async run(id, funcName, input) {
 		const service = await this.manager.getService(id);
-		const keyvalue = this.manager.connector.db.get(id) || {};
-
-		this.keyValueStore = new KeyValueStore(keyvalue);
-		
+		this.keyValueStore = new KeyValueStore(this.connector, id);
 		const res = await this.runBasic(service.source, funcName, input, service.meta);
-		await this.manager.connector.db.put(id, keyvalue);
-		
+		await this.keyValueStore.save();
+
 		return res;
 	}
 
@@ -50,7 +48,7 @@ export default class Runner {
 			}
 		}
 
-		const mod = await loader.instantiate(new Uint8Array(source), importObject);
+		const mod = await loader.instantiate(source, importObject);
 		__exports = mod.exports;
 
 		const func = mod.exports[funcName];
@@ -74,15 +72,16 @@ export default class Runner {
 
 	resMapper(__exports, input, type) {
 		switch (type) {
+			case 'usize;':
 			case 'usize':
 				let response = null;
 				try {
 					response = __exports.__getString(input)
 				}
-				catch(err) {
+				catch (err) {
 					return input;
 				}
-				
+
 				try {
 					const JSONparser = (str) => {
 						const raw = JSON.parse(str);
