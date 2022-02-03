@@ -2,9 +2,6 @@
   "name": "wasmpeer",
   "version": "0.0.1",
   "description": "A P2P Service Framework with WebAssembly",
-  "engines": {
-    "node": "14"
-  },
   "type": "module",
   "scripts": {
     "test": "mocha test/main.js --timeout 10000 --exit",
@@ -54,6 +51,7 @@
     "localforage": "^1.9.0",
     "node-fetch": "2.6.1",
     "orbit-db": "^0.27.2",
+    "orbit-db-io": "^1.0.2",
     "peer-id": "0.14.0",
     "uint8arrays": "^3.0.0",
     "uuid": "^8.3.2",
@@ -62,8 +60,8 @@
   "devDependencies": {
     "@babel/cli": "^7.13.10",
     "@babel/core": "^7.13.0",
-    "assemblyscript": "^0.19.17",
     "@types/orbit-db": "git+https://github.com/orbitdb/orbit-db-types.git",
+    "assemblyscript": "^0.19.17",
     "assemblyscript-json": "^1.1.0",
     "babel-plugin-syntax-async-functions": "^6.13.0",
     "babel-plugin-transform-regenerator": "^6.26.0",
